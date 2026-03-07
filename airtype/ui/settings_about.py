@@ -67,7 +67,8 @@ def _collect_system_info() -> dict:
         import torch
         if torch.cuda.is_available():
             gpu_info = torch.cuda.get_device_name(0)
-    except ImportError:
+    except Exception:  # noqa: BLE001
+        # PyTorch 在 PyInstaller frozen 環境可能觸發 AttributeError（循環 import）
         pass
     info["gpu"] = gpu_info
 

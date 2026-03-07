@@ -33,9 +33,10 @@ FRAME_SIZE: int = 512
 # Silero VAD v5 ONNX 模型狀態張量維度（2, batch=1, 128）
 _STATE_SHAPE: tuple[int, int, int] = (2, 1, 128)
 
-# 模型預設路徑（專案根目錄下的 models/vad/）
-_PROJECT_ROOT = Path(__file__).parent.parent.parent
-DEFAULT_MODEL_PATH: Path = _PROJECT_ROOT / "models" / "vad" / "silero_vad_v5.onnx"
+# 模型預設路徑（支援 PyInstaller 打包環境）
+from airtype.utils.paths import get_bundled_root
+
+DEFAULT_MODEL_PATH: Path = get_bundled_root() / "models" / "vad" / "silero_vad_v5.onnx"
 
 
 # ---------------------------------------------------------------------------

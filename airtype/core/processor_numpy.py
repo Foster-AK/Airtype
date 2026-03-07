@@ -23,10 +23,10 @@ _HOP_LENGTH: int = 160
 _N_MELS: int = 128
 _SAMPLE_RATE: int = 16000
 
-# 預先計算檔案所在目錄（相對於本檔案：../../models/precomputed）
-_PRECOMPUTED_DIR: Path = (
-    Path(__file__).parent.parent.parent / "models" / "precomputed"
-)
+# 預先計算檔案所在目錄（支援 PyInstaller 打包環境）
+from airtype.utils.paths import get_bundled_root
+
+_PRECOMPUTED_DIR: Path = get_bundled_root() / "models" / "precomputed"
 
 
 class NumpyPreprocessor:

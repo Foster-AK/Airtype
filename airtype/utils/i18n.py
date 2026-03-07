@@ -27,8 +27,10 @@ from typing import Callable, List, Optional
 
 logger = logging.getLogger(__name__)
 
-# 預設翻譯檔目錄（locales/ 位於專案根目錄）
-_DEFAULT_LOCALES_DIR: Path = Path(__file__).parent.parent.parent / "locales"
+# 預設翻譯檔目錄（支援 PyInstaller 打包環境）
+from airtype.utils.paths import get_bundled_root
+
+_DEFAULT_LOCALES_DIR: Path = get_bundled_root() / "locales"
 _DEFAULT_LANG: str = "zh_TW"
 
 

@@ -41,6 +41,7 @@ def _resolve_needed_engine_modules(asr_model: str) -> list[str]:
     manifest 讀取失敗時回退到全部模組。
     """
     import json
+    from pathlib import Path
 
     from airtype.utils.paths import get_manifest_path
 
@@ -94,6 +95,22 @@ def main() -> None:
 
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)  # 關閉視窗時隱藏到系統匣
+
+    # ── Windows 工作列圖示 ────────────────────────────────────────────
+    # 設定 AppUserModelID 讓 Windows 工作列正確歸類圖示（而非顯示 Python 預設圖示）
+    if sys.platform == "win32":
+        import ctypes
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("app.airtype.Airtype")
+
+    from pathlib import Path
+    from PySide6.QtGui import QIcon
+    if getattr(sys, "frozen", False):
+        _icon_base = Path(sys._MEIPASS) / "resources" / "icons"  # type: ignore[attr-defined]
+    else:
+        _icon_base = Path(__file__).resolve().parent.parent / "resources" / "icons"
+    _icon_file = _icon_base / "airtype_icon_486.ico"
+    if _icon_file.exists():
+        app.setWindowIcon(QIcon(str(_icon_file)))
 
     # ── 4.2 I18n 語言初始化 ────────────────────────────────────────────
     from airtype.utils.i18n import set_language

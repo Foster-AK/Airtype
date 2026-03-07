@@ -9,7 +9,6 @@
 
 from __future__ import annotations
 
-import functools
 import hashlib
 import json
 import logging
@@ -21,12 +20,6 @@ from pathlib import Path
 from typing import Any, Callable, List, Optional
 
 logger = logging.getLogger(__name__)
-
-# 延遲匯入 — 僅在需要時使用，但在模組層級宣告以支援測試 mock
-try:
-    from huggingface_hub import snapshot_download
-except ImportError:  # pragma: no cover
-    snapshot_download = None  # type: ignore[assignment]
 
 # 預設每塊下載大小（bytes）
 _CHUNK_SIZE = 1024 * 1024  # 1 MB
@@ -105,6 +98,20 @@ def _silent_unlink(path: Path) -> None:
         pass
 
 
+def _dir_size(path: Path) -> int:
+    """遞迴計算目錄總大小（bytes），跳過 .cache 子目錄。"""
+    total = 0
+    try:
+        for f in path.rglob("*"):
+            if ".cache" in f.parts:
+                continue
+            if f.is_file():
+                total += f.stat().st_size
+    except OSError:
+        pass
+    return total
+
+
 # ---------------------------------------------------------------------------
 # HuggingFace 進度轉接器
 # ---------------------------------------------------------------------------
@@ -148,22 +155,37 @@ class _SharedProgress:
 
 
 class _HfProgressAdapter:
-    """tqdm-compatible wrapper，將 snapshot_download 的逐檔進度轉為彙總 callback。"""
+    """tqdm-compatible wrapper，將 snapshot_download 的逐檔進度轉為彙總 callback。
+
+    實作完整的 tqdm class protocol 以相容 tqdm.contrib.concurrent.thread_map：
+    get_lock / set_lock / __init__(iterable) / __iter__ / update / close。
+    """
+
+    _lock: Any = None
 
     def __init__(
         self,
+        iterable: Any = None,
         *,
         total: int | None = None,
-        shared: _SharedProgress,
+        shared: Optional[_SharedProgress] = None,
         **_kwargs: Any,
     ) -> None:
+        self._iterable = iterable
         self._total = total or 0
         self._shared = shared
-        if self._total > 0:
-            shared.add_total(self._total)
+        if self._total > 0 and self._shared is not None:
+            self._shared.add_total(self._total)
+
+    def __iter__(self):
+        if self._iterable is not None:
+            for item in self._iterable:
+                self.update(1)
+                yield item
 
     def update(self, n: int = 1) -> None:
-        self._shared.add_downloaded(n)
+        if self._shared:
+            self._shared.add_downloaded(n)
 
     def close(self) -> None:
         pass
@@ -179,6 +201,19 @@ class _HfProgressAdapter:
 
     def __exit__(self, *_args: Any) -> None:
         self.close()
+
+    @classmethod
+    def get_lock(cls) -> Any:
+        """回傳 threading.Lock，快取於 cls._lock。"""
+        import threading
+        if cls._lock is None:
+            cls._lock = threading.Lock()
+        return cls._lock
+
+    @classmethod
+    def set_lock(cls, lock: Any) -> None:
+        """設定 class-level lock（供 thread_map 的 ThreadPoolExecutor initializer 使用）。"""
+        cls._lock = lock
 
 
 # ---------------------------------------------------------------------------
@@ -369,6 +404,7 @@ class ModelManager:
                     repo_id = self._extract_hf_repo_id(url)
                     repo_dest = self._download_hf_repo(
                         repo_id, info.filename, progress_callback,
+                        expected_size=info.size_bytes,
                     )
                     logger.info("下載完成（HF repo）：%s", repo_dest)
                     return str(repo_dest)
@@ -418,49 +454,126 @@ class ModelManager:
             return "/".join(parts[:2])
         return path
 
+    # HF repo 下載時排除的檔案 pattern
+    _HF_IGNORE_PATTERNS = [
+        "*.int8.onnx",
+        "test_wavs/*",
+        "optimizer.bin",
+        "scheduler.bin",
+        "random_states_*.pkl",
+        "*.png",
+        "*.jpg",
+    ]
+
+    def _list_hf_repo_files(self, repo_id: str) -> list[dict]:
+        """用 HF API 取得 repo 檔案清單（不依賴 huggingface_hub）。
+
+        Returns:
+            [{"rfilename": "model.bin", "size": 12345}, ...]
+        """
+        import httpx
+
+        api_url = f"https://huggingface.co/api/models/{repo_id}"
+        headers: dict[str, str] = {}
+        token = self._get_hf_token()
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        resp = httpx.get(
+            api_url,
+            headers=headers,
+            follow_redirects=True,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return data.get("siblings", [])
+
+    @staticmethod
+    def _matches_ignore_pattern(filename: str, patterns: list[str]) -> bool:
+        """檢查 filename 是否匹配任一 ignore pattern。"""
+        from fnmatch import fnmatch
+        return any(fnmatch(filename, p) for p in patterns)
+
     def _download_hf_repo(
         self,
         repo_id: str,
         filename: str,
         progress_callback: Optional[ProgressCallback],
+        expected_size: int = 0,
     ) -> Path:
-        """用 huggingface_hub snapshot_download 下載整個 repo。
+        """逐檔直接下載 HuggingFace repo（不依賴 huggingface_hub snapshot_download）。
 
         對於多檔案模型（如 OpenVINO IR），zip filename 去掉副檔名作為目錄名。
-        當 progress_callback 存在時，透過 _HfProgressAdapter 注入 tqdm_class
-        以回報逐 chunk 的彙總進度。
+        使用 HF API 列出檔案清單，再以 resolve URL 逐檔下載，
+        重用 _download_url() 的續傳與進度回報基礎設施。
         """
-        # zip filename → 目錄名（例如 qwen3-asr-0.6b-openvino-int8.zip → qwen3-asr-0.6b-openvino-int8）
         if filename.endswith(".zip"):
             dir_name = filename[:-4]
         else:
             dir_name = filename
         local_dir = self._download_dir / dir_name
+        local_dir.mkdir(parents=True, exist_ok=True)
 
-        logger.info("使用 huggingface_hub 下載 repo：%s → %s", repo_id, local_dir)
+        logger.info("列出 HF repo 檔案：%s", repo_id)
+        siblings = self._list_hf_repo_files(repo_id)
 
-        extra_kwargs: dict[str, Any] = {}
-        if progress_callback:
-            shared = _SharedProgress(callback=progress_callback)
-            extra_kwargs["tqdm_class"] = functools.partial(
-                _HfProgressAdapter, shared=shared,
+        files_to_download = [
+            s for s in siblings
+            if not self._matches_ignore_pattern(
+                s.get("rfilename", ""), self._HF_IGNORE_PATTERNS,
             )
-
-        # 排除推理不需要的檔案以節省頻寬
-        snapshot_download(
-            repo_id=repo_id,
-            local_dir=str(local_dir),
-            ignore_patterns=[
-                "*.int8.onnx",
-                "test_wavs/*",
-                "optimizer.bin",
-                "scheduler.bin",
-                "random_states_*.pkl",
-                "*.png",
-                "*.jpg",
-            ],
-            **extra_kwargs,
+        ]
+        logger.info(
+            "HF repo %s：%d 個檔案待下載（已過濾 %d 個）",
+            repo_id, len(files_to_download),
+            len(siblings) - len(files_to_download),
         )
+
+        # 計算總大小：優先用 API 回傳的 size，否則用 manifest 的 expected_size
+        api_total = sum(s.get("size", 0) for s in files_to_download)
+        total_size = api_total if api_total > 0 else expected_size
+
+        total_downloaded = 0
+        for file_info in files_to_download:
+            rfilename = file_info.get("rfilename", "")
+            file_size = file_info.get("size", 0)
+            resolve_url = (
+                f"https://huggingface.co/{repo_id}/resolve/main/{rfilename}"
+            )
+            dest = local_dir / rfilename
+            dest.parent.mkdir(parents=True, exist_ok=True)
+
+            # 已下載且大小一致 → 跳過
+            if dest.exists() and file_size > 0 and dest.stat().st_size == file_size:
+                total_downloaded += file_size
+                logger.debug("跳過已下載檔案：%s（%d bytes）", rfilename, file_size)
+                continue
+
+            # 包裝 callback 以彙總整體進度
+            file_cb: Optional[ProgressCallback] = None
+            if progress_callback and total_size > 0:
+                base = total_downloaded
+
+                def _file_progress(
+                    dl: int, _tot: int, _pct: float, eta: float,
+                    _base: int = base, _total: int = total_size,
+                ) -> None:
+                    overall_dl = _base + dl
+                    overall_pct = min(overall_dl / _total * 100.0, 99.9)
+                    progress_callback(overall_dl, _total, overall_pct, eta)
+
+                file_cb = _file_progress
+
+            logger.info("下載 HF 檔案：%s（%d bytes）", rfilename, file_size)
+            self._download_url(resolve_url, dest, file_size, file_cb)
+            total_downloaded += file_size
+
+        # 最終強制報 100%
+        if progress_callback:
+            actual = total_downloaded if total_downloaded > 0 else _dir_size(local_dir)
+            final_total = max(actual, total_size)
+            progress_callback(final_total, final_total, 100.0, 0.0)
 
         return local_dir
 

@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import logging
@@ -17,9 +18,15 @@ import shutil
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Any, Callable, List, Optional
 
 logger = logging.getLogger(__name__)
+
+# 延遲匯入 — 僅在需要時使用，但在模組層級宣告以支援測試 mock
+try:
+    from huggingface_hub import snapshot_download
+except ImportError:  # pragma: no cover
+    snapshot_download = None  # type: ignore[assignment]
 
 # 預設每塊下載大小（bytes）
 _CHUNK_SIZE = 1024 * 1024  # 1 MB
@@ -96,6 +103,82 @@ def _silent_unlink(path: Path) -> None:
         path.unlink(missing_ok=True)
     except OSError:
         pass
+
+
+# ---------------------------------------------------------------------------
+# HuggingFace 進度轉接器
+# ---------------------------------------------------------------------------
+
+
+class _SharedProgress:
+    """多個 _HfProgressAdapter 實例共享的進度彙總物件。"""
+
+    def __init__(self, callback: ProgressCallback) -> None:
+        self._callback = callback
+        self.total_bytes = 0
+        self.downloaded_bytes = 0
+        self._start_time = time.monotonic()
+
+    def add_total(self, n: int) -> None:
+        self.total_bytes += n
+
+    def add_downloaded(self, n: int) -> None:
+        self.downloaded_bytes += n
+        self._report()
+
+    def _report(self) -> None:
+        total = self.total_bytes
+        downloaded = self.downloaded_bytes
+        if total > 0:
+            percent = downloaded / total * 100.0
+            elapsed = time.monotonic() - self._start_time
+            if elapsed > 0 and downloaded > 0:
+                rate = downloaded / elapsed
+                remaining = total - downloaded
+                eta = remaining / rate if rate > 0 else 0.0
+            else:
+                eta = 0.0
+        else:
+            percent = 0.0
+            eta = 0.0
+        try:
+            self._callback(downloaded, total, percent, eta)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+class _HfProgressAdapter:
+    """tqdm-compatible wrapper，將 snapshot_download 的逐檔進度轉為彙總 callback。"""
+
+    def __init__(
+        self,
+        *,
+        total: int | None = None,
+        shared: _SharedProgress,
+        **_kwargs: Any,
+    ) -> None:
+        self._total = total or 0
+        self._shared = shared
+        if self._total > 0:
+            shared.add_total(self._total)
+
+    def update(self, n: int = 1) -> None:
+        self._shared.add_downloaded(n)
+
+    def close(self) -> None:
+        pass
+
+    def set_description(self, *_args: Any, **_kwargs: Any) -> None:
+        pass
+
+    def set_postfix(self, *_args: Any, **_kwargs: Any) -> None:
+        pass
+
+    def __enter__(self) -> _HfProgressAdapter:
+        return self
+
+    def __exit__(self, *_args: Any) -> None:
+        self.close()
 
 
 # ---------------------------------------------------------------------------
@@ -344,9 +427,9 @@ class ModelManager:
         """用 huggingface_hub snapshot_download 下載整個 repo。
 
         對於多檔案模型（如 OpenVINO IR），zip filename 去掉副檔名作為目錄名。
+        當 progress_callback 存在時，透過 _HfProgressAdapter 注入 tqdm_class
+        以回報逐 chunk 的彙總進度。
         """
-        from huggingface_hub import snapshot_download
-
         # zip filename → 目錄名（例如 qwen3-asr-0.6b-openvino-int8.zip → qwen3-asr-0.6b-openvino-int8）
         if filename.endswith(".zip"):
             dir_name = filename[:-4]
@@ -356,8 +439,12 @@ class ModelManager:
 
         logger.info("使用 huggingface_hub 下載 repo：%s → %s", repo_id, local_dir)
 
+        extra_kwargs: dict[str, Any] = {}
         if progress_callback:
-            progress_callback(0, 0, 0.0, 0.0)
+            shared = _SharedProgress(callback=progress_callback)
+            extra_kwargs["tqdm_class"] = functools.partial(
+                _HfProgressAdapter, shared=shared,
+            )
 
         # 排除推理不需要的檔案以節省頻寬
         snapshot_download(
@@ -372,10 +459,8 @@ class ModelManager:
                 "*.png",
                 "*.jpg",
             ],
+            **extra_kwargs,
         )
-
-        if progress_callback:
-            progress_callback(1, 1, 100.0, 0.0)
 
         return local_dir
 

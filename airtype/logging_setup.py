@@ -7,7 +7,9 @@
 """
 
 import logging
+import logging.handlers
 import sys
+from pathlib import Path
 from typing import Any
 
 
@@ -15,6 +17,11 @@ _LOG_FORMAT = "[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s"
 _DATE_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 _initialized = False
+
+_LOG_DIR = Path("~/.airtype/logs").expanduser()
+_LOG_FILE = "airtype.log"
+_LOG_MAX_BYTES = 5 * 1024 * 1024  # 5 MB
+_LOG_BACKUP_COUNT = 3
 
 # 需遮蔽的最短字串長度（短於此值的字串幾乎不可能是使用者語音文字）
 _SANITIZE_MIN_LEN = 15
@@ -75,8 +82,32 @@ def setup_logging(log_level: str = "INFO") -> None:
     if not _initialized:
         handler = logging.StreamHandler(sys.stderr)
         handler.setFormatter(logging.Formatter(_LOG_FORMAT, datefmt=_DATE_FORMAT))
+        handler.setLevel(numeric_level)
         handler.addFilter(SanitizingFilter())
         root.addHandler(handler)
+
+        # RotatingFileHandler — 固定 DEBUG 等級，5MB 輪替，3 份備份
+        try:
+            _LOG_DIR.mkdir(parents=True, exist_ok=True)
+            file_handler = logging.handlers.RotatingFileHandler(
+                _LOG_DIR / _LOG_FILE,
+                maxBytes=_LOG_MAX_BYTES,
+                backupCount=_LOG_BACKUP_COUNT,
+                encoding="utf-8",
+            )
+            file_handler.setLevel(logging.DEBUG)
+            file_handler.setFormatter(
+                logging.Formatter(_LOG_FORMAT, datefmt=_DATE_FORMAT)
+            )
+            file_handler.addFilter(SanitizingFilter())
+            root.addHandler(file_handler)
+        except Exception:  # noqa: BLE001
+            print(
+                "[WARNING] 無法建立日誌檔案，檔案日誌已停用",
+                file=sys.stderr,
+            )
+
         _initialized = True
 
-    root.setLevel(numeric_level)
+    # root level = DEBUG（讓 file handler 能接收所有等級）
+    root.setLevel(logging.DEBUG)

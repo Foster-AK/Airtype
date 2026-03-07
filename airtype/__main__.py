@@ -41,9 +41,10 @@ def _resolve_needed_engine_modules(asr_model: str) -> list[str]:
     manifest 讀取失敗時回退到全部模組。
     """
     import json
-    from pathlib import Path
 
-    manifest_path = Path(__file__).parent.parent / "models" / "manifest.json"
+    from airtype.utils.paths import get_manifest_path
+
+    manifest_path = get_manifest_path()
     try:
         data = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError):

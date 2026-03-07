@@ -1,4 +1,4 @@
-; Airtype v2.0 — NSIS Windows 安裝程式腳本
+﻿; Airtype v2.0 — NSIS Windows 安裝程式腳本
 ; 需求：NSIS 3.x (https://nsis.sourceforge.io/)
 ; 用法：makensis installer\windows\airtype.nsi
 ;
@@ -32,12 +32,13 @@ ShowUninstDetails show
 !include "MUI2.nsh"
 
 !define MUI_ABORTWARNING
-!define MUI_ICON "..\..\resources\icons\airtype.ico"
-!define MUI_UNICON "..\..\resources\icons\airtype.ico"
+!define MUI_ICON "..\..\resources\icons\airtype_icon_486.ico"
+!define MUI_UNICON "..\..\resources\icons\airtype_icon_486.ico"
 
 ; 安裝頁面
 !insertmacro MUI_PAGE_WELCOME
-!insertmacro MUI_PAGE_LICENSE "..\..\LICENSE"
+; 授權頁面（建立 LICENSE 檔案後取消下方註解）
+; !insertmacro MUI_PAGE_LICENSE "..\..\LICENSE"
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_PAGE_FINISH
@@ -62,10 +63,40 @@ VIAddVersionKey /LANG=0 "FileDescription" "${APP_NAME} 安裝程式"
 VIAddVersionKey /LANG=0 "FileVersion"     "${APP_VERSION}"
 
 ;------------------------------------------------------------------------------
+; 執行中偵測（安裝/解除安裝共用）
+;------------------------------------------------------------------------------
+!include "LogicLib.nsh"
+
+; 透過 tasklist 偵測程序是否執行中（不需額外外掛）
+!macro _CheckAppRunningImpl
+    _check_loop:
+    nsExec::ExecToStack 'cmd /c tasklist /FI "IMAGENAME eq ${APP_EXE}" /NH | findstr /I "${APP_EXE}"'
+    Pop $0  ; 返回碼
+    Pop $1  ; 輸出
+    ${If} $0 == 0
+        MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION \
+            "${APP_NAME} 正在執行中，請先關閉後再繼續。" \
+            IDRETRY _check_loop
+        Abort
+    ${EndIf}
+!macroend
+
+Function CheckAppRunning
+    !insertmacro _CheckAppRunningImpl
+FunctionEnd
+
+Function un.CheckAppRunning
+    !insertmacro _CheckAppRunningImpl
+FunctionEnd
+
+;------------------------------------------------------------------------------
 ; 安裝段
 ;------------------------------------------------------------------------------
 Section "主要程式" SecMain
     SectionIn RO  ; 必選
+
+    ; 偵測應用程式是否執行中（安裝/升級前需先關閉）
+    Call CheckAppRunning
 
     SetOutPath "$INSTDIR"
 
@@ -83,6 +114,7 @@ Section "主要程式" SecMain
     WriteRegStr   HKLM "${UNINSTALL_KEY}" "URLInfoAbout"    "${APP_URL}"
     WriteRegStr   HKLM "${UNINSTALL_KEY}" "InstallLocation" "$INSTDIR"
     WriteRegStr   HKLM "${UNINSTALL_KEY}" "UninstallString" "$INSTDIR\uninstall.exe"
+    WriteRegStr   HKLM "${UNINSTALL_KEY}" "DisplayIcon"     "$INSTDIR\${APP_EXE},0"
     WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoModify"        1
     WriteRegDWORD HKLM "${UNINSTALL_KEY}" "NoRepair"        1
 
@@ -108,6 +140,9 @@ SectionEnd
 ; 解除安裝段
 ;------------------------------------------------------------------------------
 Section "Uninstall"
+
+    ; 偵測應用程式是否執行中（解除安裝前需先關閉）
+    Call un.CheckAppRunning
 
     ; 遞迴移除安裝目錄（onedir 模式包含大量 DLL 與子目錄）
     RMDir /r "$INSTDIR"

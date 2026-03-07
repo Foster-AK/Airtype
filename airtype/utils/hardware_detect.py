@@ -19,6 +19,15 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
+def _hidden_subprocess_kwargs() -> dict:
+    """Windows 上隱藏 subprocess console 視窗的額外參數。"""
+    if sys.platform == "win32":
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        return {"creationflags": 0x08000000, "startupinfo": si}
+    return {}
+
+
 # ---------------------------------------------------------------------------
 # 資料類別
 # ---------------------------------------------------------------------------
@@ -157,6 +166,7 @@ class HardwareDetector:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                **_hidden_subprocess_kwargs(),
             )
             if result.returncode != 0:
                 logger.debug("nvidia-smi 返回非零：%s", result.stderr.strip())
@@ -209,6 +219,7 @@ class HardwareDetector:
                 capture_output=True,
                 text=True,
                 timeout=15,
+                **_hidden_subprocess_kwargs(),
             )
             if result.returncode != 0:
                 return None, None, 0
@@ -254,6 +265,7 @@ class HardwareDetector:
                 capture_output=True,
                 text=True,
                 timeout=15,
+                **_hidden_subprocess_kwargs(),
             )
             if result.returncode != 0:
                 return None, None, 0
@@ -292,6 +304,7 @@ class HardwareDetector:
                 capture_output=True,
                 text=True,
                 timeout=10,
+                **_hidden_subprocess_kwargs(),
             )
             if result.returncode != 0:
                 return None, None, 0
@@ -364,6 +377,7 @@ class HardwareDetector:
                     result = subprocess.run(
                         ["sysctl", "-n", "hw.memsize"],
                         capture_output=True, text=True, timeout=5,
+                        **_hidden_subprocess_kwargs(),
                     )
                     if result.returncode == 0:
                         return int(result.stdout.strip()) // (1024 * 1024)

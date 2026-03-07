@@ -30,6 +30,17 @@ from airtype.core.asr_utils import detect_language_from_cjk_ratio
 
 logger = logging.getLogger(__name__)
 
+import sys as _sys
+
+
+def _hidden_subprocess_kwargs() -> dict:
+    """Windows 上隱藏 subprocess console 視窗的額外參數。"""
+    if _sys.platform == "win32":
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        return {"creationflags": 0x08000000, "startupinfo": si}
+    return {}
+
 
 # ------------------------------------------------------------------
 # chatllm.cpp 可用性偵測（Task 2.2）
@@ -81,6 +92,7 @@ def _is_chatllm_available() -> bool:
             capture_output=True,
             timeout=5,
             check=False,
+            **_hidden_subprocess_kwargs(),
         )
         # --help 會輸出 Usage 訊息並回傳 0
         return result.returncode == 0

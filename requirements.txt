@@ -1,0 +1,6 @@
+# 安裝專案本身（含 pyproject.toml 中的正式依賴：sounddevice, numpy）
+-e .
+
+# 開發與測試依賴
+pytest>=8.0
+pytest-cov>=5.0

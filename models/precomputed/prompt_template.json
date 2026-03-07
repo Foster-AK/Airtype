@@ -1,0 +1,4 @@
+{
+  "_comment": "佔位檔案 — 從 Qwen3-ASR 模型設定產生。使用 scripts/extract_prompt_tokens.py 更新此檔案。",
+  "prompt_token_ids": []
+}

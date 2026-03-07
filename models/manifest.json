@@ -1,0 +1,113 @@
+{
+  "_comment": "Airtype 模型清單。ModelManager 在初始化時讀取此檔案。",
+  "_version": "2.0.0",
+  "models": [
+    {
+      "id": "qwen3-asr-1.7b-openvino",
+      "filename": "qwen3-asr-1.7b-openvino-int8.zip",
+      "size_bytes": 3600000000,
+      "description": "Qwen3-ASR 1.7B OpenVINO INT8（CPU 高品質路徑，由 dseditor 提供量化版）",
+      "inference_engine": "qwen3-openvino",
+      "category": "asr",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/dseditor/Qwen3-ASR-1.7B-INT8_OpenVINO"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
+      "id": "qwen3-asr-0.6b-openvino",
+      "filename": "qwen3-asr-0.6b-openvino-int8.zip",
+      "size_bytes": 1200000000,
+      "description": "Qwen3-ASR 0.6B OpenVINO INT8_ASYM（CPU 輕量路徑，由 dseditor 提供量化版）",
+      "inference_engine": "qwen3-openvino",
+      "category": "asr",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/dseditor/Qwen3-ASR-0.6B-INT8_ASYM-OpenVINO"
+      ],
+      "fallback_urls": [
+        "https://huggingface.co/Echo9Zulu/Qwen3-ASR-0.6B-INT8_ASYM-OpenVINO"
+      ],
+      "sha256": ""
+    },
+    {
+      "id": "sensevoice-small",
+      "filename": "sherpa-onnx-sensevoice-small.zip",
+      "size_bytes": 900000000,
+      "description": "SenseVoice Small sherpa-onnx（低 RAM 輕量路徑）",
+      "inference_engine": "sherpa-onnx",
+      "category": "asr",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
+      "id": "breeze-asr-25",
+      "filename": "Breeze-ASR-25",
+      "size_bytes": 3100000000,
+      "description": "Breeze-ASR-25（MediaTek Research，繁體中文優化，Whisper 架構）",
+      "inference_engine": "breeze-asr-25",
+      "category": "asr",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/MediaTek-Research/Breeze-ASR-25"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
+      "id": "qwen2.5-1.5b-instruct-q4_k_m",
+      "filename": "Qwen2.5-1.5B-Instruct-Q4_K_M.gguf",
+      "size_bytes": 986000000,
+      "description": "Qwen2.5-1.5B Instruct Q4_K_M（小型 LLM，CPU/低 VRAM 路徑）",
+      "inference_engine": "llama-cpp",
+      "category": "llm",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
+      "id": "qwen2.5-3b-instruct-q4_k_m",
+      "filename": "Qwen2.5-3B-Instruct-Q4_K_M.gguf",
+      "size_bytes": 1876000000,
+      "description": "Qwen2.5-3B Instruct Q4_K_M（中型 LLM，中等 VRAM 路徑）",
+      "inference_engine": "llama-cpp",
+      "category": "llm",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
+      "id": "qwen2.5-7b-instruct-q4_k_m",
+      "filename": "Qwen2.5-7B-Instruct-Q4_K_M.gguf",
+      "size_bytes": 4368000000,
+      "description": "Qwen2.5-7B Instruct Q4_K_M（大型 LLM，高 VRAM 路徑）",
+      "inference_engine": "llama-cpp",
+      "category": "llm",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/bartowski/Qwen2.5-7B-Instruct-GGUF/resolve/main/Qwen2.5-7B-Instruct-Q4_K_M.gguf"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    }
+  ]
+}

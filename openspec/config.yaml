@@ -1,0 +1,28 @@
+schema: spec-driven
+locale: tw
+tdd: true
+parallel_tasks: true
+audit: true
+
+context: |
+  Project: Airtype — 跨平台離線語音即時輸入工具
+  Tech stack: Python 3.11+, PySide6 (Qt 6), sounddevice (PortAudio)
+  ASR engines: Qwen3-ASR (OpenVINO INT8 / PyTorch CUDA / chatllm.cpp Vulkan), Breeze-ASR-25 (HF/faster-whisper), sherpa-onnx (SenseVoice/Paraformer)
+  VAD: Silero VAD v5 (ONNX Runtime)
+  LLM polish: llama-cpp-python (local GGUF) + OpenAI-compatible API
+  Hotkey: pynput (global hotkey)
+  Text injection: pyperclip + pyautogui (clipboard-based)
+  Config: JSON (~/.airtype/config.json)
+  Target platforms: Windows / macOS / Linux (desktop only)
+  Language: 繁體中文為主要介面語言，spec 檔案使用英文（normative language）
+  PRD: Airtype_PRD_v2.0.md
+
+rules:
+  proposal:
+    - Keep proposals concise and focused on one testable scope
+    - Reference PRD sections when applicable
+    - Always include dependencies on other changes
+  tasks:
+    - Break tasks into chunks of max 2 hours
+    - Each task must be independently testable
+    - Include test criteria for each task

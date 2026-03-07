@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Airtype
+GenericName=語音輸入工具
+Comment=跨平台離線語音即時輸入工具
+Exec=airtype
+Icon=airtype
+Categories=Utility;Accessibility;Audio;
+Keywords=speech;voice;input;recognition;asr;
+StartupNotify=false
+NoDisplay=false
+# 安裝後可執行：
+#   xdg-desktop-menu install airtype.desktop
+#   xdg-icon-resource install --size 256 resources/icons/airtype_256.png airtype

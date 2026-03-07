@@ -1,0 +1,4024 @@
+{
+    "bluelm": {
+        "brief": "BlueLM is a large-scale open-source language model independently developed by the vivo AI Lab. This release includes 2K and 32K context length versions for both Base and Chat models.",
+        "default": "7b",
+        "license": "https://github.com/vivo-ai-lab/BlueLM/blob/main/MODEL_LICENSE.pdf",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7753748688,
+                        "url": "chatllm_quantized_bluelm/bluelm-7b.bin"
+                    }
+                }
+            },
+            "7b-32k": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7754514672,
+                        "url": "chatllm_quantized_bluelm/bluelm-7b-32k.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama3.1": {
+        "brief": "Llama 3.1 is a new state-of-the-art model from Meta available in 8B, 70B and 405B parameter sizes.",
+        "default": "8b",
+        "license": "LLAMA 3.1 COMMUNITY LICENSE AGREEMENT",
+        "variants": {
+            "8b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 5025629376,
+                        "url": "chatllm_quantized_240726/llama3.1-8b_q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 8538752192,
+                        "url": "chatllm_quantized_240726/llama3.1-8b.bin"
+                    }
+                }
+            },
+            "70b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 44106363072,
+                        "url": "chatllm_quantized_llama3.1-70b/llama3.1-70b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama3.2": {
+        "brief": "Meta's Llama 3.2 goes small with 1B and 3B models.",
+        "default": "1b",
+        "license": "LLAMA 3.2 COMMUNITY LICENSE AGREEMENT",
+        "variants": {
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1319059600,
+                        "url": "chatllm_quantized_20250101_1/llama3.2_1b.bin"
+                    }
+                }
+            },
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3419876240,
+                        "url": "chatllm_quantized_20250101_1/llama3.2_3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama3.3": {
+        "brief": "New state of the art 70B model. Llama 3.3 70B offers similar performance compared to the Llama 3.1 405B model.",
+        "default": "8b",
+        "license": "LLAMA 3.3 COMMUNITY LICENSE AGREEMENT",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538791968,
+                        "url": "chatllm_quantized_llama3.3/llama3.3-8b.bin"
+                    }
+                }
+            },
+            "70b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 39696838848,
+                        "url": "chatllm_quantized_llama3.3/llama3.3-70b_q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama3-groq-tool-use": {
+        "brief": "Llama 3 Groq Tool Use model, specifically designed for advanced tool use and function calling tasks.",
+        "default": "8b",
+        "license": "LLAMA 3.1 COMMUNITY LICENSE AGREEMENT",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538804528,
+                        "url": "chatllm_quantized_240726/llama3-groq-tool-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mistral-nemo": {
+        "brief": "Mistral NeMo, a 12B model that offers a large context window of up to 128k tokens.",
+        "default": "12b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "12b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 7662149840,
+                        "url": "chatllm_quantized_240722/nemo-12b-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 13020373200,
+                        "url": "chatllm_quantized_240722/nemo-12b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "smollm": {
+        "brief": "SmolLM, a family of state-of-the-art small models with 135M, 360M, and 1.7B parameters, trained on a new high-quality dataset.",
+        "default": "1.7b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "1.7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1819874192,
+                        "url": "chatllm_quantized_240722/smolllm-1.7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "smollm2": {
+        "brief": "SmolLM2 is a family of compact language models available in three size: 135M, 360M, and 1.7B parameters.",
+        "default": "1.7b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "1.7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1819874192,
+                        "url": "chatllm_quantized_20250101_1/smollm2-1.7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "smollm3": {
+        "brief": "SmolLM3 is a 3B parameter language model designed to push the boundaries of small models.",
+        "default": "3b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3273591504,
+                        "url": "chatllm_quantized_smol/smollm3-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "smolvlm2": {
+        "brief": "SmolVLM2-2.2B is a lightweight multimodal model designed to analyze video content.",
+        "default": "2.2b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "2.2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2516121904,
+                        "url": "chatllm_quantized_smolvlm2/smolvlm2-2.2b-it.bin"
+                    }
+                }
+            }
+        }
+    },
+    "zhinao": {
+        "brief": "360Zhinao from Qihoo360.",
+        "default": "7b-4k",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "7b-4k": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 4865497088,
+                        "url": "chatllm_quantized_zhinao/zhinao-7b-4k-q4_1.bin"
+                    }
+                }
+            },
+            "7b-360k": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 4865497088,
+                        "url": "chatllm_quantized_zhinao/zhinao-7b-360k-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mistral": {
+        "brief": "The Mistral-7B-Instruct-v0.3 Large Language Model (LLM) is an instruct fine-tuned version of the Mistral-7B-v0.3.",
+        "default": "7b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7702259552,
+                        "url": "chatllm_quantized_mistral/mistral-7b-v0.3.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mistral-small": {
+        "brief": "Mistral Small 3 sets a new benchmark in the 'small' Large Language Models category below 70B.",
+        "default": "24b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "24b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 14740037840,
+                        "url": "chatllm_quantized_mistral_small/mistral-small-24b-q4_1.bin"
+                    }
+                }
+            },
+            "24b-2503": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 13266788560,
+                        "url": "chatllm_quantized_mistral_small/mistral-small-3.1-24b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "devstral-small": {
+        "brief": "Devstral is an agentic LLM for software engineering tasks built under a collaboration between Mistral AI and All Hands AI.",
+        "default": "24b-2505",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "24b-2505": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 14740211904,
+                        "url": "chatllm_quantized_mistral_small/devstral-small-2505-q4_1.bin"
+                    }
+                }
+            },
+            "24b-2507": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 14740038592,
+                        "url": "chatllm_quantized_mistral_small/devstral-small-2507-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "devstral-small-2": {
+        "brief": "Devstral Small 2 excels at using tools to explore codebases, editing multiple files and power software engineering agents.",
+        "default": "24b-2512",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "24b-2512": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 15015421232,
+                        "url": "chatllm_quantized_ministral-3/devstral-small-2-24b-2512-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mistral0.1": {
+        "brief": "The Mistral-7B-Instruct-v0.1 Large Language Model (LLM) is a instruct fine-tuned version of the Mistral-7B-v0.1 generative text model using a variety of publicly available conversation datasets.",
+        "default": "7b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "7b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q8": {
+                        "size": 7695568736,
+                        "url": "chatllm_quantized_241124_3/mistral-instruct-7b.bin"
+                    },
+                    "q4_1": {
+                        "size": 4527427424,
+                        "url": "chatllm_quantized_20241228_2/mistral-instruct-7b_q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mixtral": {
+        "brief": "The Mixtral-8x7B Large Language Model (LLM) is a pretrained generative Sparse Mixture of Experts.",
+        "default": "8x7b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "8x7b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 26271739744,
+                        "url": "chatllm_quantized_241124_3/mixtral-8x7b-q4.bin"
+                    },
+                    "q8": {
+                        "size": 49623002976,
+                        "url": "chatllm_quantized_20241227_2/mixtral-8x7b-q8.bin"
+                    }
+                }
+            }
+        }
+    },
+    "numinamath": {
+        "brief": "NuminaMath is a series of language models that are trained to solve math problems using tool-integrated reasoning (TIR).",
+        "default": "7b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7345830096,
+                        "url": "chatllm_quantized_numinamath/numinamath.bin"
+                    },
+                    "f16": {
+                        "size": 13824063696,
+                        "url": "chatllm_quantized_numinamath/numinamath-f16.bin"
+                    }
+                }
+            }
+        }
+    },
+    "codegeex4": {
+        "brief": "CodeGeeX4: Open Multilingual Code Generation Model.",
+        "default": "9b",
+        "license": "https://github.com/THUDM/CodeGeeX4/blob/main/MODEL_LICENSE",
+        "variants": {
+            "9b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 5881053648,
+                        "url": "chatllm_quantized_codegeex4/codegeex4-all-9b-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 9993306576,
+                        "url": "chatllm_quantized_codegeex4/codegeex4-all-9b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "internlm2.5": {
+        "brief": "InternLM2.5 is a 7B parameter model tailored for practical scenarios with outstanding reasoning capability.",
+        "default": "1.8b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "1.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2008808560,
+                        "url": "chatllm_quantized_internlm2.5_1.8b/internlm2.5-1.8b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8223436400,
+                        "url": "chatllm_quantized_internlm/internlm2.5-7b.bin"
+                    }
+                }
+            },
+            "20b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 11175293552,
+                        "url": "chatllm_quantized_internlm2.5_1.8b/internlm2.5-20b-q4_0.bin"
+                    }
+                }
+            },
+            "7b-1m": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8223436400,
+                        "url": "chatllm_quantized_internlm/internlm2.5-7b-1m.bin"
+                    }
+                }
+            }
+        }
+    },
+    "internlm2": {
+        "brief": "The second generation of the InternLM model.",
+        "default": "1.8b",
+        "license": "https://huggingface.co/internlm/internlm2-7b#open-source-license",
+        "variants": {
+            "1.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2008808560,
+                        "url": "chatllm_quantized_internlm/internlm2-1.8B.bin"
+                    }
+                }
+            },
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8223436400,
+                        "url": "chatllm_quantized_internlm/internlm2-chat-8b-new.bin"
+                    }
+                }
+            },
+            "20b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 21105570416,
+                        "url": "chatllm_quantized_internlm/internlm2-20b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "internlm2-math": {
+        "brief": "State-of-the-art bilingual open-sourced Math reasoning LLMs. A solver, prover, verifier, augmenter.",
+        "default": "1.8b",
+        "license": "Unknown. See https://huggingface.co/internlm/internlm2-math-plus-1_8b",
+        "variants": {
+            "1.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2008808560,
+                        "url": "chatllm_quantized_internlm/internlm2-math-plus-1_8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "internlm1": {
+        "brief": "InternLM has open-sourced a 7 billion parameter base model and a chat model tailored for practical scenarios.",
+        "default": "1.8b",
+        "license": "https://huggingface.co/internlm/internlm-chat-7b#open-source-license",
+        "variants": {
+            "1.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7783400944,
+                        "url": "chatllm_quantized_internlm/internlmv1.1_7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "internlm3": {
+        "brief": "InternLM3 has open-sourced an 8-billion parameter instruction model, InternLM3-8B-Instruct, designed for general-purpose usage and advanced reasoning.",
+        "default": "8b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9357670272,
+                        "url": "chatllm_quantized_internlm3/internlm3-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llm-compiler": {
+        "brief": "LLM Compiler is a state-of-the-art LLM that builds upon Code Llama with improved performance for code optimization and compiler reasoning.",
+        "default": "7b",
+        "license": "https://huggingface.co/facebook/llm-compiler-7b/blob/main/LICENSE.pdf",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7160799888,
+                        "url": "chatllm_quantized_llm-compiler/llm-compiler-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "index": {
+        "brief": "LLM developed by Bilibili.",
+        "default": "1.9b-chat",
+        "license": "https://huggingface.co/IndexTeam/Index-1.9B-Chat/blob/main/LICENSE",
+        "variants": {
+            "1.9b-chat": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2309982912,
+                        "url": "chatllm_quantized_index/index.bin"
+                    }
+                }
+            },
+            "1.9b-character": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2309982912,
+                        "url": "chatllm_quantized_index/index-ch.bin"
+                    }
+                }
+            },
+            "1.9b-32k": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2309982912,
+                        "url": "chatllm_quantized_index/index-1.9b-32k.bin"
+                    }
+                }
+            }
+        }
+    },
+    "glm-4": {
+        "brief": "GLM-4-9B is the open-source version of the latest generation of pre-trained models in the GLM-4 series launched by Zhipu AI.",
+        "default": "9b",
+        "license": "https://huggingface.co/THUDM/glm-4-9b/blob/main/LICENSE",
+        "variants": {
+            "9b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9993306576,
+                        "url": "chatllm_quantized_glm/glm4.bin"
+                    }
+                }
+            },
+            "9b-0414": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9997282800,
+                        "url": "chatllm_quantized_glm/glm-4-0414-9b.bin"
+                    }
+                }
+            },
+            "32b-0414": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18330610096,
+                        "url": "chatllm_quantized_glm/glm-4-0414-32b-q4_0.bin"
+                    }
+                }
+            },
+            "z1-9b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9997283072,
+                        "url": "chatllm_quantized_glm/glm-4-z1-0414-9b.bin"
+                    }
+                }
+            },
+            "z1-32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18330610368,
+                        "url": "chatllm_quantized_glm/glm-4-z1-0414-32b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "chatglm3": {
+        "brief": "ChatGLM3 is a generation of pre-trained dialogue models jointly released by Zhipu AI and Tsinghua KEG.",
+        "default": "6b",
+        "license": "https://github.com/THUDM/ChatGLM3/blob/main/MODEL_LICENSE",
+        "variants": {
+            "6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 6635798992,
+                        "url": "chatllm_quantized_glm/chatglm3-6b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "chatglm2": {
+        "brief": "ChatGLM2-6B is the second-generation version of the open-source bilingual (Chinese-English) chat model ChatGLM-6B.",
+        "default": "6b",
+        "license": "https://github.com/THUDM/ChatGLM2-6B/blob/main/MODEL_LICENSE",
+        "variants": {
+            "6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 6635798992,
+                        "url": "chatllm_quantized_glm/chatglm2.bin"
+                    }
+                }
+            }
+        }
+    },
+    "phi3": {
+        "brief": "Phi-3 is a family of lightweight 3B (Mini) and 14B (Medium) state-of-the-art open models by Microsoft.",
+        "default": "mini-4k",
+        "license": "MIT",
+        "variants": {
+            "mini-4k": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4060935568,
+                        "url": "chatllm_quantized_phi3/phi3-mini-4k.bin"
+                    }
+                }
+            },
+            "mini-128k": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4060936592,
+                        "url": "chatllm_quantized_phi3/phi3-mini-128k.bin"
+                    }
+                }
+            },
+            "mini-128k-jun-24": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4060936080,
+                        "url": "chatllm_quantized_20250101_1/phi3-mini-128k-jun-24.bin"
+                    }
+                }
+            },
+            "medium-4k": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 8727004560,
+                        "url": "chatllm_quantized_phi3-medium-4k/phi3-medium-4k_q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 14834427280,
+                        "url": "chatllm_quantized_phi3-medium-4k/phi3-medium-4k.bin"
+                    }
+                }
+            },
+            "medium-128k": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 8727005584,
+                        "url": "chatllm_quantized_phi3/phi3-medium-128k_q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "phi3.5": {
+        "brief": "Phi-3.5-mini enhances multi-lingual support with a 128K context length. Phi-3.5-MoE, featuring 16 experts and 6.6B active parameters.",
+        "default": "mini",
+        "license": "MIT",
+        "variants": {
+            "mini": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4060935840,
+                        "url": "chatllm_quantized_phi-3.5/phi3.5-mini.bin"
+                    }
+                }
+            },
+            "moe": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 26174315504,
+                        "url": "chatllm_quantized_phi-3.5/phi3.5-moe_q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "phi4": {
+        "brief": "Phi 4 is a 14B parameter, state-of-the-art open model from Microsoft.",
+        "default": "14b",
+        "license": "MIT",
+        "variants": {
+            "14b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 8249858256,
+                        "url": "chatllm_quantized_phi4/phi-4_q4_0.bin"
+                    }
+                }
+            },
+            "mini": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4082416720,
+                        "url": "chatllm_quantized_phi4/phi-4-mini.bin"
+                    }
+                }
+            }
+        }
+    },
+    "yi-1.5": {
+        "brief": "Yi 1.5 is a high-performing, bilingual language model.",
+        "default": "6b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 6441564880,
+                        "url": "chatllm_quantized_yi1.5/yi1.5-6b.bin"
+                    }
+                }
+            },
+            "9b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9383354064,
+                        "url": "chatllm_quantized_yi1.5/yi1.5-9b.bin"
+                    }
+                }
+            },
+            "9b-16k": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 5520662224,
+                        "url": "chatllm_quantized_yi1.5/yi1.5-9b-16k_q4_1.bin"
+                    }
+                }
+            },
+            "34k": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 21496949200,
+                        "url": "chatllm_quantized_20250101/yi1.5-34b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "yi-coder": {
+        "brief": "Yi-Coder is a series of open-source code language models that delivers state-of-the-art coding performance with fewer than 10 billion parameters.",
+        "default": "1.5b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1569999056,
+                        "url": "chatllm_quantized_20240916/yi-coder-1.5B-chat.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepseek-v2": {
+        "brief": "A strong, economical, and efficient Mixture-of-Experts language model.",
+        "default": "light",
+        "license": "DEEPSEEK LICENSE AGREEMENT Version 1.0, 23 October 2023",
+        "variants": {
+            "light": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 16691737872,
+                        "url": "chatllm_quantized_deepseek/deepseekv2-lite.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepseek-coder-v2": {
+        "brief": "An open-source Mixture-of-Experts code language model that achieves performance comparable to GPT4-Turbo in code-specific tasks.",
+        "default": "light",
+        "license": "DEEPSEEK LICENSE AGREEMENT Version 1.0, 23 October 2023",
+        "variants": {
+            "light": {
+                "default": "q4_1",
+                "quantized": {
+                    "q8": {
+                        "size": 16691738304,
+                        "url": "chatllm_quantized_deepseek/deepseek-coder-v2-lite-instruct.bin"
+                    },
+                    "q4_1": {
+                        "size": 9820206784,
+                        "url": "chatllm_quantized_deepseek/deepseek-coder-v2-lite-instruct_q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepseek-coder-v2-base": {
+        "brief": "An open-source Mixture-of-Experts code language model that achieves performance comparable to GPT4-Turbo in code-specific tasks.",
+        "default": "light",
+        "license": "DEEPSEEK LICENSE AGREEMENT Version 1.0, 23 October 2023",
+        "variants": {
+            "light": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 9820206784,
+                        "url": "chatllm_quantized_deepseek/deepseek-coder-v2-lite-base_q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepseek-llm": {
+        "brief": "An advanced language model crafted with 2 trillion bilingual tokens.",
+        "default": "7b",
+        "license": "DEEPSEEK LICENSE AGREEMENT Version 1.0, 23 October 2023",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7345830176,
+                        "url": "chatllm_quantized_deepseek/deepseek-7b.bin"
+                    }
+                }
+            },
+            "moe": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17402792304,
+                        "url": "chatllm_quantized_deepseek/deepseek-moe.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepseek-coder": {
+        "brief": "DeepSeek Coder is a capable coding model trained on two trillion code and natural language tokens.",
+        "default": "1.3b",
+        "license": "DEEPSEEK LICENSE AGREEMENT Version 1.0, 23 October 2023",
+        "variants": {
+            "1.3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1431733904,
+                        "url": "chatllm_quantized_deepseek/deepseekcoder-1.3b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7163394192,
+                        "url": "chatllm_quantized_deepseek/deepseekcoder-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepseek-coder-base": {
+        "brief": "DeepSeek Coder is a capable coding model trained on two trillion code and natural language tokens.",
+        "default": "1.3b",
+        "license": "DEEPSEEK LICENSE AGREEMENT Version 1.0, 23 October 2023",
+        "variants": {
+            "1.3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1431733904,
+                        "url": "chatllm_quantized_deepseek/deepseekcoder-1.3b-base.bin"
+                    }
+                }
+            },
+            "6.7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7163394192,
+                        "url": "chatllm_quantized_deepseek/deepseekcoder-6.7b-base.bin"
+                    }
+                }
+            }
+        }
+    },
+    "gemma": {
+        "brief": "Gemma is a family of lightweight, state-of-the-art open models built by Google DeepMind. Updated to version 1.1.",
+        "default": "2b",
+        "license": "https://ai.google.dev/gemma/terms",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1570351200,
+                        "url": "chatllm_quantized_models/gemma-1.1-2b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 5340384992,
+                        "url": "chatllm_quantized_20241228_2/gemma-1.1-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "gemma2": {
+        "brief": "Gemma is a family of lightweight, state-of-the-art open models built by Google DeepMind. Updated to version 2.",
+        "default": "2b",
+        "license": "https://ai.google.dev/gemma/terms",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2782194800,
+                        "url": "chatllm_quantized_gemma2_2b/gemma2-2b.bin"
+                    },
+                    "f16": {
+                        "size": 5232913520,
+                        "url": "chatllm_quantized_gemma2_2b/gemma2-2b-f16.bin"
+                    }
+                }
+            },
+            "9b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 5781867888,
+                        "url": "chatllm_quantized_gemma-2/gemma-2-9b_q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 9824849264,
+                        "url": "chatllm_quantized_gemma-2/gemma-2-9b.bin"
+                    }
+                }
+            },
+            "27b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 17023592624,
+                        "url": "chatllm_quantized_gemma-2/gemma-2-27b_q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 28935088304,
+                        "url": "chatllm_quantized_gemma-2/gemma-2-27b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "gemma3": {
+        "brief": "The Gemma 3 models are multimodal—processing text and images—and feature a 128K context window with support for over 140 languages.",
+        "default": "4b-lm",
+        "license": "https://ai.google.dev/gemma/terms",
+        "variants": {
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1066931520,
+                        "url": "chatllm_quantized_gemma-3/gemma-3-1b.bin"
+                    }
+                }
+            },
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4702295504,
+                        "url": "chatllm_quantized_gemma-3/gemma-3-4b-it.bin"
+                    }
+                }
+            },
+            "4b-lm": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4128026048,
+                        "url": "chatllm_quantized_gemma-3/gemma-3-4b-lm.bin"
+                    }
+                }
+            },
+            "12b-lm": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 12507837472,
+                        "url": "chatllm_quantized_gemma-3/gemma-3-12b-lm.bin"
+                    }
+                }
+            },
+            "27b-lm": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 15201602176,
+                        "url": "chatllm_quantized_gemma-3/gemma-3-27b-lm-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "medgemma": {
+        "brief": "MedGemma is a collection of Gemma 3 variants that are trained for performance on medical text and image comprehension.",
+        "default": "4b",
+        "license": "https://developers.google.com/health-ai-developer-foundations/terms",
+        "variants": {
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4702296176,
+                        "url": "chatllm_quantized_gemma-3/medgemma-4b-it.bin"
+                    }
+                }
+            },
+            "27b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 17341271408,
+                        "url": "chatllm_quantized_gemma-3/medgemma-27b-it-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "medgemma-1.5": {
+        "brief": "MedGemma 1.5 4B is an updated version of the MedGemma 1 4B model.",
+        "default": "4b",
+        "license": "https://developers.google.com/health-ai-developer-foundations/terms",
+        "variants": {
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4702295312,
+                        "url": "chatllm_quantized_gemma-3/medgemma-1.5-4b-it.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama3": {
+        "brief": "Meta Llama 3: The most capable openly available LLM to date.",
+        "default": "8b",
+        "license": "https://llama.meta.com/llama3/license",
+        "variants": {
+            "8b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 5025629392,
+                        "url": "chatllm_quantized_llama3/llama3-8b-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 8538752208,
+                        "url": "chatllm_quantized_llama3/llama3-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama3-chinese-lora": {
+        "brief": "Llama-3-Chinese-8B-Instruct-LoRA, which is further tuned with 5M instruction data on Llama-3-Chinese-8B.",
+        "default": "8b",
+        "license": "",
+        "variants": {
+            "8b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 4523754704,
+                        "url": "chatllm_quantized_llama3/llama3-8b-lora-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "minicpm": {
+        "brief": "MiniCPM is an End-Size LLM developed by ModelBest Inc. and TsinghuaNLP, with only 2.4B parameters excluding embeddings.",
+        "default": "2b-sft",
+        "license": "https://github.com/OpenBMB/General-Model-License/blob/main/%E9%80%9A%E7%94%A8%E6%A8%A1%E5%9E%8B%E8%AE%B8%E5%8F%AF%E5%8D%8F%E8%AE%AE-%E6%9D%A5%E6%BA%90%E8%AF%B4%E6%98%8E-%E5%AE%A3%E4%BC%A0%E9%99%90%E5%88%B6-%E5%95%86%E4%B8%9A%E6%8E%88%E6%9D%83.md",
+        "variants": {
+            "2b-dpo": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 1705488848,
+                        "url": "chatllm_quantized_models/minicpm-dpo-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 2897542592,
+                        "url": "chatllm_quantized_20250101_1/minicpm-dpo-q8.bin"
+                    }
+                }
+            },
+            "2b-sft": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2897542592,
+                        "url": "chatllm_quantized_models/minicpm_sft_q8.bin"
+                    }
+                }
+            },
+            "moe": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 8673301984,
+                        "url": "chatllm_quantized_minicpm_moe/minicpm-moe-q4_1.bin"
+                    }
+                }
+            },
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1446808448,
+                        "url": "chatllm_quantized_20250101_1/minicpm-1b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "minicpm3": {
+        "brief": "MiniCPM3-4B is the 3rd generation of MiniCPM series.",
+        "default": "4b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4330719488,
+                        "url": "chatllm_quantized_20240916/minicpm3-4b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "minicpm4": {
+        "brief": "MiniCPM4 series are highly efficient large language models (LLMs) designed explicitly for end-side devices.",
+        "default": "8b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8698683664,
+                        "url": "chatllm_quantized_minicpm4/minicpm4-8b.bin"
+                    }
+                }
+            },
+            "0.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 462201712,
+                        "url": "chatllm_quantized_minicpm4/minicpm4-0.5b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "minicpm-embedding": {
+        "brief": "MiniCPM-Embedding-Light is a bilingual & cross-lingual text embedding model developed by ModelBest Inc., THUNLP and NEUIR.",
+        "default": "light",
+        "license": "https://github.com/OpenBMB/MiniCPM/blob/main/MiniCPM%20Model%20License.md",
+        "variants": {
+            "light": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 462196880,
+                        "url": "chatllm_quantized_minicpm_rag/minicpm-emb-light.bin"
+                    }
+                }
+            }
+        }
+    },
+    "minicpm-reranker": {
+        "brief": "MiniCPM-Reranker-Light is a bilingual & cross-lingual text re-ranking model developed by ModelBest Inc., THUNLP and NEUIR",
+        "default": "light",
+        "license": "https://github.com/OpenBMB/MiniCPM/blob/main/MiniCPM%20Model%20License.md",
+        "variants": {
+            "light": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1446810368,
+                        "url": "chatllm_quantized_minicpm_rag/minicpm-reranker-light.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qanything": {
+        "brief": "QAnything is a local knowledge base question-answering system based on QwenLM.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 4832334112,
+                        "url": "chatllm_quantized_models/qwen-qany-7b-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 8210125088,
+                        "url": "chatllm_quantized_20241228/qwen-qany-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen1.5": {
+        "brief": "Qwen1.5 is the beta version of Qwen2 from Alibaba group.",
+        "default": "moe",
+        "license": "Tongyi Qianwen RESEARCH LICENSE AGREEMENT",
+        "variants": {
+            "1.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1956630800,
+                        "url": "chatllm_quantized_models/qwen1.5-1.8b.bin"
+                    }
+                }
+            },
+            "14b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15060054288,
+                        "url": "chatllm_quantized_20241228_2/qwen1.5-14b.bin"
+                    }
+                }
+            },
+            "moe": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 8952812112,
+                        "url": "chatllm_quantized_models/qwen1.5-moe-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen2": {
+        "brief": "Qwen2 is a new series of large language models from Alibaba group.",
+        "default": "1.5b",
+        "license": "All models with the exception of Qwen2 72B (both instruct and base models) are Apache 2.0 licensed. Qwen2 72B model still uses the original Qianwen License.",
+        "variants": {
+            "0.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 529392352,
+                        "url": "chatllm_quantized_qwen2/qwen2-0.5b.bin"
+                    }
+                }
+            },
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1644897504,
+                        "url": "chatllm_quantized_qwen2/qwen2-1.5b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847120,
+                        "url": "chatllm_quantized_qwen2/qwen2-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen2-audio": {
+        "brief": "Qwen2-Audio is the new series of Qwen large audio-language models.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8935174032,
+                        "url": "chatllm_quantized_qwen2/qwen2-audio-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen2.5" : {
+        "brief": "Qwen2 is a new series of large language models from Alibaba group.",
+        "default": "1.5b",
+        "license": "All models, except for the 3B (QWen Research) and 72B (Qwen) variants, are licensed under Apache 2.0.",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1644897856,
+                        "url": "chatllm_quantized_qwen2.5/qwen2.5-1.5b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847472,
+                        "url": "chatllm_quantized_qwen2.5/qwen2.5-7b.bin"
+                    }
+                }
+            },
+            "14b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15699928448,
+                        "url": "chatllm_quantized_qwen2.5/qwen2.5-14b.bin"
+                    }
+                }
+            },
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3283801664,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-3b.bin"
+                    },
+                    "q4_1": {
+                        "size": 1933809216,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-3b_q4_1.bin"
+                    }
+                }
+            },
+            "32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18296273168,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-32b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen2.5-coder" : {
+        "brief": "Qwen2 is a new series of large language models from Alibaba group.",
+        "default": "1.5b",
+        "license": "All models, except for the 3B (QWen Research) and 72B (Qwen) variants, are licensed under Apache 2.0.",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1644897856,
+                        "url": "chatllm_quantized_qwen2.5/qwen2.5-coder-1.5b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847472,
+                        "url": "chatllm_quantized_241110/qwen2.5-coder-7b.bin"
+                    },
+                    "q4_0": {
+                        "size": 4289205872,
+                        "url": "chatllm_quantized_241110/qwen2.5-coder-7b_q4_0.bin"
+                    }
+                }
+            },
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3283801664,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-coder-3b.bin"
+                    },
+                    "q4_1": {
+                        "size": 1933809216,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-coder-3b_q4_1.bin"
+                    }
+                }
+            },
+            "32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18437831280,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-coder-32b_q4_0.bin"
+                    },
+                    "q4_1": {
+                        "size": 20485503600,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-coder-32b_q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 34819209840,
+                        "url": "chatllm_quantized_20250101_1/qwen2.5-coder-32b_q8.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen2.5.1-coder" : {
+        "brief": "Qwen2 is a new series of large language models from Alibaba group.",
+        "default": "1.5b",
+        "license": "All models, except for the 3B (QWen Research) and 72B (Qwen) variants, are licensed under Apache 2.0.",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1644897856,
+                        "url": "chatllm_quantized_241110/qwen2.5.1-coder-1.5b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847472,
+                        "url": "chatllm_quantized_241110/qwen2.5.1-coder-7b.bin"
+                    },
+                    "q4_0": {
+                        "size": 4289205872,
+                        "url": "chatllm_quantized_241110/qwen2.5.1-coder-7b_q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen2.5-math" : {
+        "brief": "Qwen2 is a new series of large language models from Alibaba group.",
+        "default": "7b",
+        "license": "All models, except for the 3B (QWen Research) and 72B (Qwen) variants, are licensed under Apache 2.0.",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847472,
+                        "url": "chatllm_quantized_qwen2.5/qwen2.5-math-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen2.5-vl" : {
+        "brief": "Flagship vision-language model of Qwen and also a significant leap from the previous Qwen2-VL.",
+        "default": "3b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4128566736,
+                        "url": "chatllm_quantized_qwen2.5/qwen2.5-vl-3b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8949973008,
+                        "url": "chatllm_quantized_qwen2.5/qwen2.5-vl-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-vl" : {
+        "brief": "Qwen3-VL — the most powerful vision-language model in the Qwen series to date.",
+        "default": "2b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2267742336,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-2b-it.bin"
+                    }
+                }
+            },
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4722642576,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-4b-it.bin"
+                    }
+                }
+            },
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9448812704,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-8b-it.bin"
+                    }
+                }
+            },
+            "a3b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 19613743984,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-a3b-it-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 33147565040,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-a3b-it.bin"
+                    }
+                }
+            },
+            "a3b-thinking": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 19613743888,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-a3b-thinking-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 33147564944,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-a3b-thinking.bin"
+                    }
+                }
+            }
+        }
+    },
+    "starling-lm": {
+        "brief": "Starling is a large language model trained by reinforcement learning from AI feedback focused on improving chatbot helpfulness.",
+        "default": "7b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "7b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 4074845056,
+                        "url": "chatllm_quantized_models/starling-7b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "yi-1": {
+        "brief": "Yi (v1) is a high-performing, bilingual language model.",
+        "default": "6b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 6441564880,
+                        "url": "chatllm_quantized_241124_3/yi-6b.bin"
+                    }
+                }
+            },
+            "9b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9383354064,
+                        "url": "chatllm_quantized_20241228/yi-9b.bin"
+                    }
+                }
+            },
+            "34b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 19347696080,
+                        "url": "chatllm_quantized_models/yi-34b-q4.bin"
+                    }
+                }
+            }
+        }
+    },
+    "granite3-dense": {
+        "brief": "The IBM Granite 2B and 8B models are designed to support tool-based use cases and support for retrieval augmented generation (RAG), streamlining code generation, translation and bug fixing.",
+        "default": "2b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2693566832,
+                        "url": "chatllm_quantized_granite_3.0/granite-3-2b.bin"
+                    }
+                }
+            },
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8683703024,
+                        "url": "chatllm_quantized_granite_3.0/granite-3-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "granite3.2-dense": {
+        "brief": "Granite-3.2 are long-context AI models fine-tuned for thinking capabilities.",
+        "default": "2b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2693566832,
+                        "url": "chatllm_quantized_granite_3.0/granite-3.2-2b.bin"
+                    }
+                }
+            },
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8683703024,
+                        "url": "chatllm_quantized_granite_3.0/granite-3.2-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "granite3-moe": {
+        "brief": "The IBM Granite 1B and 3B models are the first mixture of experts (MoE) Granite models from IBM designed for low latency usage.",
+        "default": "1b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1419564608,
+                        "url": "chatllm_quantized_granite_3.0/granite-3-moe-1b.bin"
+                    }
+                }
+            },
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3506762528,
+                        "url": "chatllm_quantized_granite_3.0/granite-3-moe-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "bce-emb": {
+        "brief": "BCEmbedding: Bilingual and Cross-lingual Embedding for RAG.",
+        "default": "0.2b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "0.2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 299434560,
+                        "url": "chatllm_quantized_models/bce_emb_q8.bin"
+                    }
+                }
+            }
+        }
+    },
+    "bce-reranker": {
+        "brief": "BCEmbedding: Bilingual and Cross-lingual Reranker for RAG.",
+        "default": "0.2b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "0.2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 300065332,
+                        "url": "chatllm_quantized_models/bce_reranker_q8.bin"
+                    }
+                }
+            }
+        }
+    },
+    "bge-m3": {
+        "brief": "BGE-M3, distinguished for its versatility in Multi-Functionality, Multi-Linguality, and Multi-Granularity.",
+        "default": "0.4b",
+        "license": "MIT",
+        "variants": {
+            "0.4b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 359572992,
+                        "url": "chatllm_quantized_models/bge-m3-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 607365376,
+                        "url": "chatllm_quantized_20250101_1/bge-m3-q8.bin"
+                    }
+                }
+            }
+        }
+    },
+    "bge-reranker-m3": {
+        "brief": "BGE-Reranker-v2-M3.",
+        "default": "0.4b",
+        "license": "MIT",
+        "variants": {
+            "0.4b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 360233284,
+                        "url": "chatllm_quantized_models/bge-reranker-m3-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 608484868,
+                        "url": "chatllm_quantized_20250101_1/bge-reranker-m3-q8.bin"
+                    }
+                }
+            }
+        }
+    },
+    "megrez" : {
+        "brief": "Megrez-3B-Instruct is a large language model trained by Infinigence AI. Megrez-3B aims to provide a fast inference, compact, and powerful edge-side intelligent solution through software-hardware co-design.",
+        "default": "3b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3101520384,
+                        "url": "chatllm_quantized_megrez/megrez-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "megrez2" : {
+        "brief": "Megrez2-3x7B-A3B is a device native large language model.",
+        "default": "a3b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "a3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 794555812,
+                        "url": "chatllm_quantized_megrez/megrez2-3x7b-a3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "falcon3" : {
+        "brief": "Falcon3 family of Open Foundation Models is a set of pretrained and instruct LLMs ranging from 1B to 10B parameters.",
+        "default": "1b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1777274800,
+                        "url": "chatllm_quantized_falcon3/falcon3-1b.bin"
+                    }
+                }
+            },
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3433097392,
+                        "url": "chatllm_quantized_falcon3/falcon3-3b.bin"
+                    }
+                }
+            },
+            "10b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 5801103664,
+                        "url": "chatllm_quantized_20250101_1/falcon3-10b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "exaone3.5": {
+        "brief": "EXAONE 3.5, a collection of instruction-tuned bilingual (English and Korean) generative models ranging from 2.4B to 32B parameters, developed and released by LG AI Research.",
+        "default": "2.4b",
+        "license": "EXAONE AI Model License Agreement 1.1 - NC",
+        "variants": {
+            "2.4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2559193504,
+                        "url": "chatllm_quantized_20241227/exaone-2.4b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "exaone-deep": {
+        "brief": "EXAONE Deep, which exhibits superior capabilities in various reasoning tasks including math and coding benchmarks, ranging from 2.4B to 32B parameters developed and released by LG AI Research.",
+        "default": "2.4b",
+        "license": "EXAONE AI Model License Agreement 1.1 - NC",
+        "variants": {
+            "2.4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2559193504,
+                        "url": "chatllm_quantized_exaone/exaone-deep-2.4b.bin"
+                    }
+                }
+            },
+            "7.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8310959696,
+                        "url": "chatllm_quantized_exaone/exaone-deep-7.8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "exaone4": {
+        "brief": "EXAONE 4.0, which integrates a Non-reasoning mode and Reasoning mode to achieve both the excellent usability of EXAONE 3.5 and the advanced reasoning abilities of EXAONE Deep.",
+        "default": "1.2b",
+        "license": "EXAONE AI Model License Agreement 1.2 - NC",
+        "variants": {
+            "1.2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1362869568,
+                        "url": "chatllm_quantized_exaone/exaone-4.0-1.2b.bin"
+                    }
+                }
+            },
+            "32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18007298320,
+                        "url": "chatllm_quantized_exaone/exaone-4.0-32b-q4_0.bin"
+                    },
+                    "q4_1": {
+                        "size": 20007457040,
+                        "url": "chatllm_quantized_exaone/exaone-4.0-32b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "telechat2": {
+        "brief": "TeleChat2 is a large language model trained by the Artificial Intelligence Research Institute of China Telecom.",
+        "default": "3b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3265298768,
+                        "url": "chatllm_quantized_20241227/telechat2-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "telechat2.5": {
+        "brief": "TeleChat2.5 is a large language model trained by the Artificial Intelligence Research Institute of China Telecom.",
+        "default": "35b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "35b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q8": {
+                        "size": 19939670112,
+                        "url": "chatllm_quantized_telechat/telechat2.5-35b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "alphageometry-lm": {
+        "brief": "TeleChat2 is a large language model trained by the Artificial Intelligence Research Institute of China Telecom.",
+        "default": "0.2b",
+        "license": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+        "variants": {
+            "0.2b": {
+                "default": "f32",
+                "quantized": {
+                    "f32": {
+                        "size": 608298976,
+                        "url": "chatllm_quantized_20241227/alphageometry-lm-f32.bin"
+                    }
+                }
+            }
+        }
+    },
+    "stable-code": {
+        "brief": "Stable Code 3B is a coding model with instruct and code completion variants on par with models such as Code Llama 7B that are 2.5x larger.",
+        "default": "3b",
+        "license": "STABILITY AI NON-COMMERCIAL RESEARCH COMMUNITY LICENSE AGREEMENT",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2972374416,
+                        "url": "chatllm_quantized_241124/stablecode-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "startcoder2": {
+        "brief": "StarCoder2 is the next generation of transparently trained open code LLMs that comes in three sizes: 3B, 7B and 15B parameters.",
+        "default": "3b",
+        "license": "BigCode Open RAIL-M v1 License Agreement",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3224019520,
+                        "url": "chatllm_quantized_241124/startcoder2-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "wizardcoder": {
+        "brief": "State-of-the-art code generation model.",
+        "default": "python-7b",
+        "license": "",
+        "variants": {
+            "python-7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7160808608,
+                        "url": "chatllm_quantized_241124/wizardcoder-python-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "wizardlm": {
+        "brief": "General use model based on Llama 2.",
+        "default": "13b",
+        "license": "",
+        "variants": {
+            "13b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 13831029920,
+                        "url": "chatllm_quantized_241124/wizardlm-13b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "wizard-math": {
+        "brief": "Model focused on math and logic problems.",
+        "default": "7b",
+        "license": "MICROSOFT RESEARCH LICENSE",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7695568736,
+                        "url": "chatllm_quantized_241124/wizardmath-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "command-r": {
+        "brief": "Command R is a Large Language Model optimized for conversational interaction and long context tasks.",
+        "default": "35b",
+        "license": "Creative Commons Attribution-NonCommercial 4.0 International Public",
+        "variants": {
+            "35b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 19685936400,
+                        "url": "chatllm_quantized_241124_2/c4ai_command_r_q4_0.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538242480,
+                        "url": "chatllm_quantized_20250101_1/cohere2-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "codefuse-deepseek": {
+        "brief": "CodeFuse-DeepSeek-33B is a 33B Code-LLM finetuned by QLoRA on multiple code-related tasks on the base model DeepSeek-Coder-33B. It ranks first on the HuggingFace Big Code Models Leaderboard (2024.01.30).",
+        "default": "33b",
+        "license": "(unknown)",
+        "variants": {
+            "33b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 35430394912,
+                        "url": "chatllm_quantized_241124_2/codefuse-deepseek-33b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "codellama": {
+        "brief": "A large language model that can use text prompts to generate and discuss code.",
+        "default": "7b",
+        "license": "LLAMA 2 COMMUNITY LICENSE AGREEMENT",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7160939440,
+                        "url": "chatllm_quantized_241124_2/codellama-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "codeqwen": {
+        "brief": "CodeQwen1.5 is a large language model pretrained on a large amount of code data.",
+        "default": "7b",
+        "license": "Tongyi Qianwen LICENSE AGREEMENT",
+        "variants": {
+            "7b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 4535287488,
+                        "url": "chatllm_quantized_241124_2/codeqwen1.5-7b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "codestral": {
+        "brief": "CodeQwen1.5 is a large language model pretrained on a large amount of code data.",
+        "default": "22b",
+        "license": "Mistral AI Non-Production License",
+        "variants": {
+            "22b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 13907361472,
+                        "url": "chatllm_quantized_241124_2/codestra_hf_q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "baichuan": {
+        "brief": "Baichuan-7B is an open-source large-scale pre-trained model developed by Baichuan Intelligent Technology.",
+        "default": "7b",
+        "license": "Baichuan-7B License",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q4_1": {
+                        "size": 7977698656,
+                        "url": "chatllm_quantized_241124_3/baichuan-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "baichuan2": {
+        "brief": "Baichuan 2 is the new generation of large-scale open-source language models launched by Baichuan Intelligence inc.",
+        "default": "13b",
+        "license": "Apache 2.0 and Community License for Baichuan2 Model",
+        "variants": {
+            "13b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 14768252768,
+                        "url": "chatllm_quantized_241124_3/baichuan2-13b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "baichuan-m1": {
+        "brief": "Baichuan-14B-M1 is the industry's first open-source large language model developed from scratch by Baichuan Intelligence, specifically optimized for medical scenarios.",
+        "default": "14b",
+        "license": "https://github.com/baichuan-inc/Baichuan-M1-14B/blob/main/Baichuan-M1-14B%E6%A8%A1%E5%9E%8B%E7%A4%BE%E5%8C%BA%E8%AE%B8%E5%8F%AF%E5%8D%8F%E8%AE%AE.pdf",
+        "variants": {
+            "14b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15378383344,
+                        "url": "chatllm_quantized_baichuan/baichuan-m1-14b.bin"
+                    }
+                }
+            },
+            "med-r1": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15378391696,
+                        "url": "chatllm_quantized_baichuan/baichuan-m1-med-r1-14b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "baichuan-m2": {
+        "brief": "Baichuan-M2-32B is Baichuan AI's medical-enhanced reasoning model, the second medical model released by Baichuan.",
+        "default": "32b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "32b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 20485513536,
+                        "url": "chatllm_quantized_baichuan/baichuan-m2-32b-q_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "dolphin2.6": {
+        "brief": "This model is based on Phi-2 and is governed by MIT licence.",
+        "default": "phi2",
+        "license": "MICROSOFT RESEARCH LICENSE & MIT",
+        "variants": {
+            "phi2": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2957468560,
+                        "url": "chatllm_quantized_241124_3/dolphinphi2.bin"
+                    }
+                }
+            }
+        }
+    },
+    "openchat": {
+        "brief": "The Overall Best Performing Open Source 7B Model.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7695586176,
+                        "url": "chatllm_quantized_241124_3/openchat-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "neuralbeagle": {
+        "brief": "NeuralBeagle14-7B is a DPO fine-tune of Beagle14-7B.",
+        "default": "7b",
+        "license": "Creative Commons Attribution Non Commercial 4.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7695568736,
+                        "url": "chatllm_quantized_20241227_2/NeuralBeagle14-7B.bin"
+                    }
+                }
+            }
+        }
+    },
+    "persimmon": {
+        "brief": "Persimmon-8B, the best fully permissively-licensed model in the 8B class by Adept.",
+        "default": "8b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9994614304,
+                        "url": "chatllm_quantized_20241228/persimmon-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "fuyu": {
+        "brief": "Fuyu-8B, a small version of the multimodal model by Adept.",
+        "default": "base-8b",
+        "license": "Creative Commons Attribution Non Commercial 4.0",
+        "variants": {
+            "base-8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 10016751152,
+                        "url": "chatllm_quantized_fuyu/fuyu-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "codegemma": {
+        "brief": "CodeGemma is a collection of powerful, lightweight models that can perform a variety of coding tasks like fill-in-the-middle code completion, code generation, natural language understanding, mathematical reasoning, and instruction following.",
+        "default": "2b",
+        "license": "Gemma Terms of Use",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2666768512,
+                        "url": "chatllm_quantized_20241228_2/codegemma-2b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "orion": {
+        "brief": "Orion-14B series models are open-source multilingual large language models trained from scratch by OrionStarAI.",
+        "default": "14b",
+        "license": "Orion-14B Series: Models Community License Agreement",
+        "variants": {
+            "14b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15408495376,
+                        "url": "chatllm_quantized_20241228/orion-14b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "aya": {
+        "brief": "Aya 23, released by Cohere, is a new family of state-of-the-art, multilingual models that support 23 languages.",
+        "default": "8b",
+        "license": "Creative Commons Attribution-NonCommercial 4.0 International Public License",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538242320,
+                        "url": "chatllm_quantized_20250101/aya-23-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "neo": {
+        "brief": "Neo is a completely open source large language model, including code, all model weights, datasets used for training, and training details by m-a-p.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8282246288,
+                        "url": "chatllm_quantized_20250101/map-neo-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "olmoe": {
+        "brief": "OLMoE is a Mixture-of-Experts LLM with 1B active and 7B total parameters, 100% open-source.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7353459872,
+                        "url": "chatllm_quantized_20250101/olmoe-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "olmo2": {
+        "brief": "OLMo 2 is a new family of 7B and 13B models trained on up to 5T tokens. These models are on par with or better than equivalently sized fully open models, and competitive with open-weight models such as Llama 3.1 on English academic benchmarks.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7758791536,
+                        "url": "chatllm_quantized_olmo-2/olmo-2-7b.bin"
+                    }
+                }
+            },
+            "32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18137886064,
+                        "url": "chatllm_quantized_olmo-2/olmo-2-32b-q4_0.bin"
+                    }
+                }
+            },
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1580567120,
+                        "url": "chatllm_quantized_olmo-2/olmo-2-0415-1b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "marco-o1": {
+        "brief": "An open large reasoning model for real-world solutions by the Alibaba International Digital Commerce Group (AIDC-AI).",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847472,
+                        "url": "chatllm_quantized_20250101_1/marco-o1-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwq": {
+        "brief": "QwQ is an experimental research model focused on advancing AI reasoning capabilities.",
+        "default": "32b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18437831360,
+                        "url": "chatllm_quantized_qwen2/qwb-rel-32b-q4_0.bin"
+                    }
+                }
+            },
+            "32b-preview": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18437831280,
+                        "url": "chatllm_quantized_20250101_1/qwb-32b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama-mtp": {
+        "brief": "Models accompanying the research paper 'Better & Faster Large Language Models via Multi-token Prediction.'",
+        "default": "7b",
+        "license": "Unknown",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7160799952,
+                        "url": "chatllm_quantized_20250101_1/llama-multi.bin"
+                    }
+                }
+            }
+        }
+    },
+    "reader-lm-v2": {
+        "brief": "ReaderLM-v2 is a 1.5B parameter language model that converts raw HTML into beautifully formatted markdown or JSON with superior accuracy and improved longer context handling.",
+        "default": "1.5b",
+        "license": "Creative Commons Attribution Non Commercial 4.0",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1644897856,
+                        "url": "chatllm_quantized_jina_readerlm2/readerlm-v2.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepseek-r1": {
+        "brief": "DeepSeek's first generation (distilled) reasoning models with comparable performance to OpenAI-o1.",
+        "default": "qwen-1.5b",
+        "license": "MIT",
+        "variants": {
+            "qwen-1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1892857472,
+                        "url": "chatllm_quantized_deepseek_r1/ds-r1-qwen-1.5b.bin"
+                    }
+                }
+            },
+            "qwen-7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847488,
+                        "url": "chatllm_quantized_deepseek_r1/ds-r1-qwen-7b.bin"
+                    }
+                }
+            },
+            "qwen3-8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8707846800,
+                        "url": "chatllm_quantized_deepseek_r1/ds-r1-0528-qwen3-8b.bin"
+                    }
+                }
+            },
+            "qwen-32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18437831296,
+                        "url": "chatllm_quantized_ds_r1_qwen-32b/ds-r1-distill-qwen-32b.bin"
+                    }
+                }
+            },
+            "llama-8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538752128,
+                        "url": "chatllm_quantized_deepseek_r1/ds-r1-llama-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deephermes3": {
+        "brief": "DeepHermes 3 Preview is the latest version of our flagship Hermes series of LLMs by Nous Research, and one of the first models in the world to unify Reasoning (long chains of thought that improve answer accuracy) and normal LLM response modes into one model. We have also improved LLM annotation, judgement, and function calling.",
+        "default": "llama3.1-8b",
+        "license": "LLAMA 3.1 COMMUNITY LICENSE AGREEMENT, Apache License 2.0",
+        "variants": {
+            "llama3.1-8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538752192,
+                        "url": "chatllm_quantized_deephermes-3-llama/deephermes-3-8b.bin"
+                    }
+                }
+            },
+            "mistral-24b-preview": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 13266823216,
+                        "url": "chatllm_quantized_deephermes-3/deephermes-mistral-24b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepscaler": {
+        "brief": "DeepScaleR-1.5B-Preview is a language model fine-tuned from DeepSeek-R1-Distilled-Qwen-1.5B using distributed reinforcement learning (RL) to scale up to long context lengths.",
+        "default": "1.5b",
+        "license": "MIT",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1892857472,
+                        "url": "chatllm_quantized_deepseek_r1/deepscale-r1-1.5b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "watt-tool": {
+        "brief": "watt-tool-8B is a fine-tuned language model based on LLaMa-3.1-8B-Instruct, optimized for tool usage and multi-turn dialogue.",
+        "default": "8b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538752192,
+                        "url": "chatllm_quantized_watt-tool/watt-tool-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "moonlight": {
+        "brief": "Moonlight, a 3B/16B-parameter Mixture-of-Expert (MoE) model trained with 5.7T tokens using Muon.",
+        "default": "3b",
+        "license": "MIT",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 16963505344,
+                        "url": "chatllm_quantized_moonshot/moonlight.bin"
+                    }
+                }
+            }
+        }
+    },
+    "hunyuan": {
+        "brief": "Hunyuan-7B & Hunyuan-A13B are developed by Tencent.",
+        "default": "7b",
+        "license": "Tencent License",
+        "variants": {
+            "0.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 576757664,
+                        "url": "chatllm_quantized_hunyuan/hunyuan-dense-v1-0.5b.bin"
+                    }
+                }
+            },
+            "1.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1907337760,
+                        "url": "chatllm_quantized_hunyuan/hunyuan-dense-v1-1.8b.bin"
+                    }
+                }
+            },
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4490205600,
+                        "url": "chatllm_quantized_hunyuan/hunyuan-dense-v1-4b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7981585920,
+                        "url": "chatllm_quantized_hunyuan/hunyuan-7b.bin"
+                    }
+                }
+            },
+            "a13b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 45226040592,
+                        "url": "chatllm_quantized_hunyuan/hunyuan-a13b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "instella": {
+        "brief": "A family of fully open state-of-the-art 3-billion-parameter language models (LMs) trained from scratch on AMD Instinct™ MI300X GPUs.",
+        "default": "3b",
+        "license": "ResearchRAIL license",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3309549408,
+                        "url": "chatllm_quantized_instella/instella-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "reka-flash-3": {
+        "brief": "Reka Flash 3 is a 21B general-purpose reasoning model that was trained from scratch.",
+        "default": "21b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "21b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 11763674544,
+                        "url": "chatllm_quantized_reka/reka-flash-3-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "reka-flash-3.1": {
+        "brief": "Reka Flash 3.1 is an update to our Reka Flash 3.",
+        "default": "21b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "21b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 13070239600,
+                        "url": "chatllm_quantized_reka/reka-flash-3.1-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llama3-nemotron": {
+        "brief": "Reasoning models that are post trained and/or derived from Llama 3.1-8B-Instruct, 3.3-70B-Instruct for reasoning, human chat preferences, and tasks, such as RAG and tool calling.",
+        "default": "8b",
+        "license": "https://www.nvidia.com/en-us/agreements/enterprise-software/nvidia-open-model-license/",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8538752192,
+                        "url": "chatllm_quantized_llama3.1-nemotron/llama3.1-nemotron-8b.bin"
+                    }
+                }
+            },
+            "49b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 28059766048,
+                        "url": "chatllm_quantized_llama3.1-nemotron/llama-3.3-nemotron-49b-v1-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "olympiccoder" : {
+        "brief": "The OlympicCoder models were post-trained from Qwen2.5-Coder exclusively on C++ solutions generated by DeepSeek-R1.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8096847472,
+                        "url": "chatllm_quantized_OlympicCoder/olympiccoder-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "solar-pro": {
+        "brief": "Solar Pro Preview, an advanced large language model (LLM) with 22 billion parameters designed to fit into a single GPU.",
+        "default": "22b",
+        "license": "MIT",
+        "variants": {
+            "22b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 13840223024,
+                        "url": "chatllm_quantized_solar-pro/solarpro-22b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "aquilachat2": {
+        "brief": "Aquila2 series, which comprises a wide range of bilingual models with parameter sizes of 7, 34, and 70 billion.",
+        "default": "7b",
+        "license": "BAAI Aquila Model Licence Agreement",
+        "variants": {
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 13840223024,
+                        "url": "chatllm_quantized_aquilachat2/aquilachat2-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "gigachat": {
+        "brief": "Dialogue model from the GigaChat family of models, based on GigaChat-20B-A3B-base.",
+        "default": "20b",
+        "license": "MIT",
+        "variants": {
+            "20b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 21881540560,
+                        "url": "chatllm_quantized_gigachat/gigachat-20b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "bailing": {
+        "brief": "Ling is a MoE LLM provided and open-sourced by InclusionAI.",
+        "default": "lite",
+        "license": "MIT",
+        "variants": {
+            "lite": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17856646160,
+                        "url": "chatllm_quantized_bailing/bailing-lite.bin"
+                    }
+                }
+            },
+            "lite-0415": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17856646160,
+                        "url": "chatllm_quantized_bailing/bailing-lite-0415.bin"
+                    }
+                }
+            },
+            "lite-1.5-2507": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17856685024,
+                        "url": "chatllm_quantized_bailing/ling-lite-1.5-2507.bin"
+                    }
+                }
+            }
+        }
+    },
+    "ling2": {
+        "brief": "Ling 2.0 — a family of MoE-based large language models that combine SOTA performance with high efficiency.",
+        "default": "mini",
+        "license": "MIT",
+        "variants": {
+            "mini": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17277819184,
+                        "url": "chatllm_quantized_bailing/ling-mini-2.bin"
+                    }
+                }
+            }
+        }
+    },
+    "ring": {
+        "brief": "Ring-lite is a lightweight, fully open-sourced MoE (Mixture of Experts) LLM designed for complex reasoning tasks.",
+        "default": "lite-2507",
+        "license": "MIT",
+        "variants": {
+            "lite-2507": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17856684480,
+                        "url": "chatllm_quantized_bailing/ring-lite-2507.bin"
+                    }
+                }
+            }
+        }
+    },
+    "ring2": {
+        "brief": "Ring-mini-2.0 — a high-performance inference-oriented MoE model deeply optimized based on the Ling 2.0 architecture.",
+        "default": "mini",
+        "license": "MIT",
+        "variants": {
+            "mini": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17277815376,
+                        "url": "chatllm_quantized_bailing/ring-mini-2.bin"
+                    }
+                }
+            }
+        }
+    },
+    "openhands-lm": {
+        "brief": "OpenHands LM is built on the foundation of Qwen Coder 2.5 Instruct 32B, leveraging its powerful base capabilities for coding tasks.",
+        "default": "32b",
+        "license": "MIT",
+        "variants": {
+            "32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18437839088,
+                        "url": "chatllm_quantized_openhands/openhands-32b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "cogito": {
+        "brief": "The Cogito LLMs are instruction tuned generative models (text in/text out).",
+        "default": "3b",
+        "license": "LLAMA 3.2 COMMUNITY LICENSE AGREEMENT",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3419920688,
+                        "url": "chatllm_quantized_cogito/cogito-v1-llama-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "deepcoder": {
+        "brief": "DeepCoder is a fully open-Source 14B coder model at O3-mini level, with a 1.5B version also available.",
+        "default": "1.5b",
+        "license": "MIT",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1892864432,
+                        "url": "chatllm_quantized_deepcoder/deepcoder-1.5b.bin"
+                    }
+                }
+            },
+            "14b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15699928144,
+                        "url": "chatllm_quantized_deepcoder/deepcoder-14b-preview.bin"
+                    }
+                }
+            }
+        }
+    },
+    "skywork-or1": {
+        "brief": "Skywork-OR1 (Open Reasoner 1) series of models, including Skywork-OR1-Math-7B, Skywork-OR1-32B-Preview, and Skywork-OR1-7B-Preview",
+        "default": "7b-math",
+        "license": "Unknown",
+        "variants": {
+            "7b-math": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8096854496,
+                        "url": "chatllm_quantized_skywork/skywork-or1-math-7b.bin"
+                    }
+                }
+            },
+            "32b-preview": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18437838048,
+                        "url": "chatllm_quantized_skywork/skywork-or1-32b-preview-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "apriel": {
+        "brief": "Apriel is a family of models built for versatility, offering high throughput and efficiency across a wide range of tasks.",
+        "default": "5b",
+        "license": "MIT",
+        "variants": {
+            "5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 5140774832,
+                        "url": "chatllm_quantized_apriel/apriel-5b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "xverse": {
+        "brief": "XVERSE is a multilingual large language model, independently developed by Shenzhen Yuanxiang Technology.",
+        "default": "7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "7b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 4107979184,
+                        "url": "chatllm_quantized_xverse/xverse-7b-q4_0.bin"
+                    }
+                }
+            },
+            "26b-moe": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 16113281488,
+                        "url": "chatllm_quantized_xverse/xverse-26b-moe-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3": {
+        "brief": "Qwen3 is the latest generation of large language models in Qwen series, offering a comprehensive suite of dense and mixture-of-experts (MoE) models.",
+        "default": "1.7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "0.6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 637779424,
+                        "url": "chatllm_quantized_qwen3/qwen3-0.6b.bin"
+                    }
+                }
+            },
+            "1.7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1832758656,
+                        "url": "chatllm_quantized_qwen3/qwen3-1.7b.bin"
+                    }
+                }
+            },
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4278737888,
+                        "url": "chatllm_quantized_qwen3/qwen3-4b.bin"
+                    }
+                }
+            },
+            "4b-thinking-2507": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4278737792,
+                        "url": "chatllm_quantized_qwen3/qwen3-4b-thinking-2507.bin"
+                    }
+                }
+            },
+            "4b-2507": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4278737776,
+                        "url": "chatllm_quantized_qwen3/qwen3-4b-2507.bin"
+                    }
+                }
+            },
+            "8b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 5124539408,
+                        "url": "chatllm_quantized_qwen3/qwen3-8b-q4_1.bin"
+                    }
+                }
+            },
+            "14b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15696867088,
+                        "url": "chatllm_quantized_qwen3/qwen3-14b.bin"
+                    }
+                }
+            },
+            "30b-moe": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 19089033136,
+                        "url": "chatllm_quantized_qwen3/qwen3-30b-a3b-q4_1.bin"
+                    }
+                }
+            },
+            "30b-moe-2507": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 19089032992,
+                        "url": "chatllm_quantized_qwen3/qwen3-30b-a3b-2507-q4_1.bin"
+                    }
+                }
+            },
+            "30b-moe-thinking-2507": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 19089033008,
+                        "url": "chatllm_quantized_qwen3/qwen3-30b-a3b-thinking-2507-q4_1.bin"
+                    }
+                }
+            },
+            "32b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 18435330320,
+                        "url": "chatllm_quantized_qwen3/qwen3-32b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-coder": {
+        "brief": "Qwen3-Coder, the most agentic code model to date from Qwen.",
+        "default": "30b-moe",
+        "license": "Apache License 2.0",
+        "variants": {
+            "30b-moe": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 19089035808,
+                        "url": "chatllm_quantized_qwen3/qwen3-coder-30b-a3b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-emb": {
+        "brief": "The Qwen3 Embedding model series is the latest proprietary model of the Qwen family, specifically designed for text embedding and ranking tasks.",
+        "default": "0.6b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "0.6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 637488928,
+                        "url": "chatllm_quantized_qwen3/qwen3-emb-0.6b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-vl-emb": {
+        "brief": "The Qwen3-VL-Embedding and Qwen3-VL-Reranker model series are the latest additions to the Qwen family.",
+        "default": "2b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2267737840,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-emb-2b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-reranker": {
+        "brief": "The Qwen3 Embedding model series is the latest proprietary model of the Qwen family, specifically designed for text embedding and ranking tasks.",
+        "default": "0.6b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "0.6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 637488928,
+                        "url": "chatllm_quantized_qwen3/qwen3-reranker-0.6b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-vl-reranker": {
+        "brief": "The Qwen3-VL-Embedding and Qwen3-VL-Reranker model series are the latest additions to the Qwen family.",
+        "default": "2b",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2267737712,
+                        "url": "chatllm_quantized_qwen3/qwen3-vl-reranker-2b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mimo": {
+        "brief": "MiMo-7B, a series of models trained from scratch and born for reasoning tasks.",
+        "default": "7b-rl",
+        "license": "MIT",
+        "variants": {
+            "7b-rl": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8104850016,
+                        "url": "chatllm_quantized_mimo/mimo-7b-rl.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mimo-vl": {
+        "brief": "MiMo-VL, featuring enhanced performance across multiple benchmarks, improved thinking control capabilities, and better user experience.",
+        "default": "7b-rl",
+        "license": "MIT",
+        "variants": {
+            "7b-rl": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8834139216,
+                        "url": "chatllm_quantized_mimo/mimo-vl-7b-rl-2508.bin"
+                    }
+                }
+            }
+        }
+    },
+    "seed-coder": {
+        "brief": "Seed-Coder, a powerful, transparent, and parameter-efficient family of open-source code models at the 8B scale, featuring base, instruct, and reasoning variants.",
+        "default": "8b-it",
+        "license": "MIT",
+        "variants": {
+            "8b-it": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8771479824,
+                        "url": "chatllm_quantized_seed-coder/seed-coder-8b-it.bin"
+                    }
+                }
+            },
+            "8b-base": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8771479696,
+                        "url": "chatllm_quantized_seed-coder/seed-coder-8b-base.bin"
+                    }
+                }
+            },
+            "8b-reasoning": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8771479856,
+                        "url": "chatllm_quantized_seed-coder/seed-coder-8b-reasoning.bin"
+                    }
+                }
+            }
+        }
+    },
+    "orpheus-tts": {
+        "brief": "Orpheus TTS is a state-of-the-art, Llama-based Speech-LLM designed for high-quality, empathetic text-to-speech generation.",
+        "default": "3b-en",
+        "license": "Apache License 2.0",
+        "variants": {
+            "3b-en": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3544609280,
+                        "url": "chatllm_quantized_orpheus-tts/orpheus-tts-en-3b.bin"
+                    }
+                }
+            },
+            "3b-zh": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3544609312,
+                        "url": "chatllm_quantized_orpheus-tts/orpheus-tts-zh-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "oute-tts": {
+        "brief": "OuteTTS - Unified Text-To-Speech models treating audio as language.",
+        "default": "1b",
+        "license": "Creative Commons Attribution Non Commercial Share Alike 4.0",
+        "variants": {
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1438416240,
+                        "url": "chatllm_quantized_oute-tts/oute-tts-1b.bin"
+                    }
+                }
+            },
+            "0.6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 750058976,
+                        "url": "chatllm_quantized_oute-tts/oute-tts-0.6b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "kimi-vl": {
+        "brief": "Kimi-VL, an efficient open-source Mixture-of-Experts (MoE) vision-language model (VLM) that offers advanced multimodal reasoning, long-context understanding, and strong agent capabilities.",
+        "default": "a3b-instruct",
+        "license": "MIT",
+        "variants": {
+            "a3b-instruct": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17566398608,
+                        "url": "chatllm_quantized_kimi-vl/kimi-vl.bin"
+                    },
+                    "q4_1": {
+                        "size": 10447149072,
+                        "url": "chatllm_quantized_kimi-vl/kimi-vl-q4_1.bin"
+                    }
+                }
+            },
+            "a3b-thinking": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 10447148784,
+                        "url": "chatllm_quantized_kimi-vl/kimi-vl-thinking-q4_1.bin"
+                    }
+                }
+            },
+            "a3b-thinking-2506": {
+                "default": "q8",
+                "quantized": {
+                    "q4_1": {
+                        "size": 10447149104,
+                        "url": "chatllm_quantized_kimi-vl/kimi-vl-thinking-2506-q4_1.bin"
+                    },
+                    "q8": {
+                        "size": 17566398640,
+                        "url": "chatllm_quantized_kimi-vl/kimi-vl-thinking-2506.bin"
+                    }
+                }
+            }
+        }
+    },
+    "confucius3-math": {
+        "brief": "Confucius3-Math is a 14B parameter open-source resoning LLM developed by the NetEase Youdao AI Team, specifically optimized for K-12 mathematics education.",
+        "default": "14b",
+        "license": "MIT",
+        "variants": {
+            "14b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 15699928544,
+                        "url": "chatllm_quantized_confucius3/confucius3-math-14b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "jan-nano": {
+        "brief": "Jan-Nano is a compact 4-billion parameter language model specifically designed and trained for deep research tasks.",
+        "default": "4b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4278738464,
+                        "url": "chatllm_quantized_jan-nano/jan-nano-4b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "ernie": {
+        "brief": "ERNIE 4.5 models are released by Baidu.",
+        "default": "0.3b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "0.3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 384864032,
+                        "url": "chatllm_quantized_ernie/ernie-4.5-0.3b.bin"
+                    }
+                }
+            },
+            "a3b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 13643262720,
+                        "url": "chatllm_quantized_ernie/ernie-4.5-21b-a3b-q4_1.bin"
+                    }
+                }
+            },
+            "a3b-thinking": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 13643231552,
+                        "url": "chatllm_quantized_ernie/ernie-4.5-21b-thinking-a3b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "pangu": {
+        "brief": "Pangu models are released by Huawei.",
+        "default": "a16b",
+        "license": "Pangu Model License Agreement",
+        "variants": {
+            "a16b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 40500401920,
+                        "url": "chatllm_quantized_pangu/pangu-pro-moe-a16b-q4_0.bin"
+                    }
+                }
+            },
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1230978064,
+                        "url": "chatllm_quantized_pangu/pangu-embedded-1b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "jiutian-coder": {
+        "brief": "A series of high-performance and energy-efficient code large language models (LLMs) developed by the JiuTian team.",
+        "default": "8b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8317413728,
+                        "url": "chatllm_quantized_jiutian/jt-coder-8b-it.bin"
+                    }
+                }
+            }
+        }
+    },
+    "gpt-oss": {
+        "brief": "OpenAI’s open-weight models designed for powerful reasoning, agentic tasks, and versatile developer use cases.",
+        "default": "20b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "20b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 22252508416,
+                        "url": "chatllm_quantized_gpt/gpt-oss-20b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "seed-oss": {
+        "brief": "Seed-OSS is a series of open-source large language models developed by ByteDance's Seed Team.",
+        "default": "36b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "36b": {
+                "default": "q4_0",
+                "quantized": {
+                    "q4_0": {
+                        "size": 20344573712,
+                        "url": "chatllm_quantized_gpt/seed-oss-36b-q4_0.bin"
+                    }
+                }
+            }
+        }
+    },
+    "apertus": {
+        "brief": "Apertus is a 70B and 8B parameter language model designed to push the boundaries of fully-open multilingual and transparent models.",
+        "default": "8b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8563501248,
+                        "url": "chatllm_quantized_gpt/apertus-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "grove-moe": {
+        "brief": "GroveMoE, a new sparse architecture using adjugate experts for dynamic computation allocation.",
+        "default": "33b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "33b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1": {
+                        "size": 20599719312,
+                        "url": "chatllm_quantized_bailing/grove-moe-33b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "janus-pro": {
+        "brief": "Janus-Pro is a novel autoregressive framework that unifies multimodal understanding and generation.",
+        "default": "1b",
+        "license": "MIT",
+        "variants": {
+            "1b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2279324768,
+                        "url": "chatllm_quantized_janus/janus-pro-1b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7944145328,
+                        "url": "chatllm_quantized_janus/janus-pro-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "dots.ocr": {
+        "brief": "dots.ocr is a powerful, multilingual document parser that unifies layout detection and content recognition within a single vision-language model while maintaining good reading order.",
+        "default": "3b",
+        "license": "MIT",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3235134784,
+                        "url": "chatllm_quantized_dots/dots.ocr-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "nanonets-ocr2": {
+        "brief": "Nanonets-OCR2 by Nanonets is a family of powerful, state-of-the-art image-to-markdown OCR models that go far beyond traditional text extraction.",
+        "default": "1.5b",
+        "license": "MIT",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1757924512,
+                        "url": "chatllm_quantized_nanonets/nanonets-ocr2-1.5b.bin"
+                    }
+                }
+            },
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4128566704,
+                        "url": "chatllm_quantized_nanonets/nanonets-ocr2-3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "llada2.0": {
+        "brief": "LLaDA2.0-mini-preview is a diffusion language model featuring a 16BA1B Mixture-of-Experts (MoE) architecture.",
+        "default": "mini",
+        "license": "Apache License 2.0",
+        "variants": {
+            "mini-preview": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17277819200,
+                        "url": "chatllm_quantized_bailing/llada2.0-mini-preview.bin"
+                    },
+                    "q4_1": {
+                        "size": 10166016368,
+                        "url": "chatllm_quantized_bailing/llada2.0-mini-preview-q4_1.bin"
+                    }
+                }
+            },
+            "mini": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 17277819216,
+                        "url": "chatllm_quantized_bailing/llada2.0-mini.bin"
+                    },
+                    "q4_1": {
+                        "size": 10166016336,
+                        "url": "chatllm_quantized_bailing/llada2.0-mini-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "ouro": {
+        "brief": "Ouro-2.6B is a 2.6 billion parameter Looped Language Model (LoopLM) that achieves exceptional parameter efficiency through iterative shared-weight computation.",
+        "default": "2.6b-thinking",
+        "license": "Apache License 2.0",
+        "variants": {
+            "2.6b-thinking": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2837152928,
+                        "url": "chatllm_quantized_ouro/ouro-2.6b-thinking.bin"
+                    },
+                    "f16": {
+                        "size": 5338008608,
+                        "url": "chatllm_quantized_ouro/ouro-2.6b-thinking-f16.bin"
+                    }
+                }
+            },
+            "1.4b-thinking": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1526153152,
+                        "url": "chatllm_quantized_ouro/ouro-1.4b-thinking.bin"
+                    }
+                }
+            }
+        }
+    },
+    "maya1": {
+        "brief": "Maya1 is a speech model built for expressive voice generation with rich human emotion and precise voice design.",
+        "default": "3.3b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "3.3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 3544675872,
+                        "url": "chatllm_quantized_maya/maya1-3.3b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "ministral-3": {
+        "brief": "The Ministral 3 family is designed for edge deployment, capable of running on a wide range of hardware.",
+        "default": "3b-it",
+        "license": "Apache License Version 2.0",
+        "variants": {
+            "3b-it": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4097001056,
+                        "url": "chatllm_quantized_ministral-3/ministral-3-3b-it-2512.bin"
+                    }
+                }
+            },
+            "3b-th": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4097001056,
+                        "url": "chatllm_quantized_ministral-3/ministral-3-3b-th-2512.bin"
+                    }
+                }
+            },
+            "8b-it": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9483102352,
+                        "url": "chatllm_quantized_ministral-3/ministral-3-8b-it-2512.bin"
+                    }
+                }
+            },
+            "8b-th": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 9483102320,
+                        "url": "chatllm_quantized_ministral-3/ministral-3-8b-th-2512.bin"
+                    }
+                }
+            }
+        }
+    },
+    "vibethinker": {
+        "brief": "VibeThinker-1.5B is a 1.5-billion parameter dense language model.",
+        "default": "1.5b",
+        "license": "MIT",
+        "variants": {
+            "1.5b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1644903648,
+                        "url": "chatllm_quantized_vibethinker/vibethinker-1.5b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "dolphin-v2": {
+        "brief": "Dolphin-v2 is an enhanced universal document parsing model that substantially improves upon the original Dolphin.",
+        "default": "4b",
+        "license": "Unknown",
+        "variants": {
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4128566736,
+                        "url": "chatllm_quantized_dolphin/dolphin-v2.bin"
+                    }
+                }
+            }
+        }
+    },
+    "rnj-1": {
+        "brief": "Rnj-1 is a family of 8B parameter open-weight, dense models trained from scratch by Essential AI.",
+        "default": "8b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8837356032,
+                        "url": "chatllm_quantized_rnj/rnj-1-it-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "nanbeige4": {
+        "brief": "Nanbeige4-3B-Thinking-2511 is an enhanced iteration over previous Nanbeige4-3B-Thinking-2510.",
+        "default": "3b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "3b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4182500800,
+                        "url": "chatllm_quantized_nanbeige/nanbeige-3b-thinking.bin"
+                    }
+                }
+            }
+        }
+    },
+    "glm-4.6v": {
+        "brief": "GLM-4.6V series model includes two versions: GLM-4.6V (106B), a foundation model designed for cloud and high-performance cluster scenarios, and GLM-4.6V-Flash (9B), a lightweight model optimized for local deployment and low-latency applications.",
+        "default": "flash",
+        "license": "MIT",
+        "variants": {
+            "flash": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 10971131968,
+                        "url": "chatllm_quantized_glm/glm-4.6v-flash.bin"
+                    }
+                }
+            }
+        }
+    },
+    "glm-asr": {
+        "brief": "GLM-ASR-Nano-2512 is a robust, open-source speech recognition model with 1.5B parameters.",
+        "default": "nano",
+        "license": "MIT",
+        "variants": {
+            "nano": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2408315232,
+                        "url": "chatllm_quantized_glm/glm-asr-nano-2512.bin"
+                    }
+                }
+            }
+        }
+    },
+    "nemotron-cascade": {
+        "brief": "Nemotron-Cascade-8B, a powerful general-purpose model trained through sequential and domain-wise reinforcement learning.",
+        "default": "8b",
+        "license": "NVIDIA Open Model License Agreement",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 8707852320,
+                        "url": "chatllm_quantized_nemotron/nemotron-cascade-8b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mai-ui": {
+        "brief": "MAI-UI, a family of foundation GUI agents spanning the full spectrum of sizes.",
+        "default": "2b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "2b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2267737776,
+                        "url": "chatllm_quantized_qwen3/mai-ui-2b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "hy-mt1.5": {
+        "brief": "Hunyuan Translation Model Version 1.5 includes a 1.8B translation model, HY-MT1.5-1.8B, and a 7B translation model, HY-MT1.5-7B.",
+        "default": "1.8b",
+        "license": "https://github.com/Tencent-Hunyuan/HY-MT/blob/main/License.txt",
+        "variants": {
+            "1.8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1907333088,
+                        "url": "chatllm_quantized_hunyuan/hunyuan-mt1.5-1.8b.bin"
+                    }
+                }
+            },
+            "7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 7980004000,
+                        "url": "chatllm_quantized_hunyuan/hunyuan-mt1.5-7b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "mirothinker-v1.5": {
+        "brief": "MiroThinker v1.5 is the world-leading search agent designed to advance tool-augmented reasoning and information-seeking capabilities.",
+        "default": "30b",
+        "license": "MIT",
+        "variants": {
+            "30b": {
+                "default": "q4_1",
+                "quantized": {
+                    "q4_1" : {
+                        "size": 19089034208,
+                        "url": "chatllm_quantized_miromind/mirothinker-v1.5-30b-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "wedlm": {
+        "brief": "WeDLM-8B-Instruct is our flagship instruction-tuned diffusion language model that performs parallel decoding under standard causal attention, fine-tuned from WeDLM-8B.",
+        "default": "8b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "8b": {
+                "default": "q8",
+                "quantized": {
+                    "q8" : {
+                        "size": 8707847728,
+                        "url": "chatllm_quantized_hunyuan/wedlm-8b-it.bin"
+                    }
+                }
+            }
+        }
+    },
+    "translategemma": {
+        "brief": "TranslateGemma is a family of lightweight, state-of-the-art open translation models from Google, based on the Gemma 3 family of models.",
+        "default": "4b",
+        "license": "https://ai.google.dev/gemma/terms",
+        "variants": {
+            "4b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 4702295440,
+                        "url": "chatllm_quantized_gemma-3/translategemma-4b-it.bin"
+                    }
+                }
+            },
+            "12b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 13083673872,
+                        "url": "chatllm_quantized_gemma-3/translategemma-12b-it.bin"
+                    }
+                }
+            },
+            "27b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 29283314832,
+                        "url": "chatllm_quantized_gemma-3/translategemma-27b-it.bin"
+                    }
+                }
+            }
+        }
+    },
+    "glm-4.7": {
+        "brief": "GLM-4.7-Flash is a 30B-A3B MoE model.",
+        "default": "flash",
+        "license": "MIT",
+        "variants": {
+            "flash": {
+                "default": "q4_1",
+                "quantized": {
+                    "q8": {
+                        "size": 31823406368,
+                        "url": "chatllm_quantized_glm/glm-4.7-flash.bin"
+                    },
+                    "q4_1": {
+                        "size": 18723284256,
+                        "url": "chatllm_quantized_glm/glm-4.7-flash-q4_1.bin"
+                    }
+                }
+            }
+        }
+    },
+    "step3-vl": {
+        "brief": "STEP3-VL-10B is a lightweight open-source foundation model designed to redefine the trade-off between compact efficiency and frontier-level multimodal intelligence.",
+        "default": "10b",
+        "license": "MIT",
+        "variants": {
+            "10b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 11016250064,
+                        "url": "chatllm_quantized_step/step3-vl-10b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-asr": {
+        "brief": "The Qwen3-ASR family includes Qwen3-ASR-1.7B and Qwen3-ASR-0.6B, which support language identification and ASR for 52 languages and dialects.",
+        "default": "1.7b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "1.7b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 2505570400,
+                        "url": "chatllm_quantized_qwen3/qwen3-asr-1.7b.bin"
+                    }
+                }
+            },
+            "0.6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 1005656864,
+                        "url": "chatllm_quantized_qwen3/qwen3-asr-0.6b.bin"
+                    }
+                }
+            }
+        }
+    },
+    "qwen3-forcedaligner": {
+        "brief": "Qwen3-ForcedAligner-0.6B supports timestamp prediction for arbitrary units within up to 5 minutes of speech in 11 languages.",
+        "default": "0.6b",
+        "license": "Apache License 2.0",
+        "variants": {
+            "0.6b": {
+                "default": "q8",
+                "quantized": {
+                    "q8": {
+                        "size": 984439424,
+                        "url": "chatllm_quantized_qwen3/qwen3-focedaligner-0.6b.bin"
+                    },
+                    "f16": {
+                        "size": 1840552064,
+                        "url": "chatllm_quantized_qwen3/qwen3-focedaligner-0.6b-f16.bin"
+                    }
+                }
+            }
+        }
+    }
+}

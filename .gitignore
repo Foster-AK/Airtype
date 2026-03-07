@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Build / Distribution
+build/
+build_tmp/
+dist/
+
+# PyInstaller
+*.spec
+
+# chatllm binaries (DLL / EXE / LIB)
+chatllm/bin/*.dll
+chatllm/bin/*.exe
+chatllm/bin/*.lib
+chatllm/bin/*.pem
+chatllm/bindings/*.lib
+
+# Models (large binary files)
+models/vad/*.onnx
+models/precomputed/*.npy
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Claude / Agent / Spectra tooling
+.agent/
+.claude/
+.spectra/
+openspec/.vector-search.db*
+
+# Testing / Benchmarks
+.pytest_cache/
+.benchmarks/
+htmlcov/
+.coverage
+.coverage.*
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Misc
+=1.17

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Airtype v2.0 — macOS 應用程式授權清單 (Entitlements)
+    用於 codesign --entitlements 與 App Sandbox 設定
+-->
+<plist version="1.0">
+<dict>
+    <!-- 允許 JIT 編譯（Python 直譯器需要） -->
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+
+    <!-- 允許未簽署的可執行記憶體（ONNX Runtime / llama.cpp 需要） -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+
+    <!-- 允許停用函式庫驗證（動態連結 .so 需要） -->
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+
+    <!-- 麥克風存取權限（語音辨識需要） -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+
+    <!-- 存取輔助功能 API（文字注入需要） -->
+    <key>com.apple.security.temporary-exception.apple-events</key>
+    <array>
+        <string>com.apple.systemevents</string>
+    </array>
+</dict>
+</plist>

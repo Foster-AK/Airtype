@@ -1,13 +1,16 @@
-"""音訊工具函式：環形緩衝區與 RMS 計算。
+"""音訊工具函式：環形緩衝區、RMS 計算、平台特定設定。
 
 提供：
 - RingBuffer：以 numpy 循環陣列實作的固定大小音訊緩衝區（執行緒安全）
 - compute_rms：計算音訊幀的均方根音量
+- build_wasapi_extra_settings：建立 Windows WASAPI auto_convert 設定（跨模組共用）
 """
 
 from __future__ import annotations
 
+import sys
 import threading
+from typing import Any, Optional
 
 import numpy as np
 
@@ -92,6 +95,24 @@ class RingBuffer:
             self._buf[:] = 0.0
             self._head = 0
             self._count = 0
+
+
+def build_wasapi_extra_settings() -> Optional[Any]:
+    """建立 Windows WASAPI auto_convert extra_settings。
+
+    Windows WASAPI 共享模式下啟用 auto_convert，讓 OS 音訊引擎
+    自動處理取樣率轉換（針對不原生支援 16kHz 的裝置）。
+    非 Windows 平台或 WasapiSettings 不可用時回傳 None。
+
+    此函式供 AudioCaptureService 與 _MicTestWorker 共用，避免重複實作。
+    """
+    if sys.platform != "win32":
+        return None
+    try:
+        import sounddevice as sd
+        return sd.WasapiSettings(auto_convert=True)
+    except Exception:
+        return None
 
 
 def compute_rms(frame: np.ndarray) -> float:

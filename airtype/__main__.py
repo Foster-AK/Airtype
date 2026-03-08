@@ -161,8 +161,13 @@ def main() -> None:
     from airtype.utils.i18n import set_language
     set_language(cfg.general.language)
 
+    # ── 4.2.1 安全性：驗證上次執行無殘留音訊檔 ─────────────────────────
+    from airtype.core.audio_capture import AudioCaptureService, verify_no_audio_files
+    _airtype_dir = Path.home() / ".airtype"
+    if not verify_no_audio_files(_airtype_dir):
+        logger.warning("安全性稽核：~/.airtype/ 內發現殘留音訊檔，請手動確認並刪除")
+
     # ── 4.3 AudioCaptureService（容錯：無麥克風 → None） ───────────────
-    from airtype.core.audio_capture import AudioCaptureService
     audio_capture = AudioCaptureService(cfg)
     try:
         audio_capture.start()

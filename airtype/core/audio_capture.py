@@ -7,16 +7,17 @@
 - 輸入裝置列舉與執行時切換
 - 3 秒 numpy 環形緩衝區（供 VAD/ASR 讀取）
 - 每幀 RMS 音量計算（供波形 UI 使用）
-- 透過 queue.Queue 進行執行緒安全幀資料交換
+- 以 collections.deque 進行無競態幀資料交換（取代 queue.Queue）
 - 音訊非持久化驗證（安全性審查）
 """
 
 from __future__ import annotations
 
 import logging
-import queue
 import sys
+import time
 import threading
+from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Union
@@ -26,7 +27,7 @@ import sounddevice as sd
 
 from airtype.config import AirtypeConfig
 from airtype.ui.device_selector import list_input_devices
-from airtype.utils.audio_utils import RingBuffer, compute_rms
+from airtype.utils.audio_utils import RingBuffer, build_wasapi_extra_settings, compute_rms
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +70,11 @@ class AudioCaptureService:
         self._config = config
         self._stream: Optional[sd.InputStream] = None
         self._ring_buffer = RingBuffer(RING_BUFFER_SIZE)
-        self._frame_queue: queue.Queue[np.ndarray] = queue.Queue(
-            maxsize=FRAME_QUEUE_MAXSIZE
-        )
+        # deque(maxlen=N) 在 append 時若滿則自動丟棄最舊元素，
+        # CPython 的 GIL 保證 append/popleft 各自的原子性，無 TOCTOU 問題。
+        self._frame_queue: deque[np.ndarray] = deque(maxlen=FRAME_QUEUE_MAXSIZE)
+        # _rms 是純 Python float，在 CPython 中單次賦值受 GIL 保護，不需額外 Lock。
         self._rms: float = 0.0
-        self._rms_lock = threading.Lock()
         self._is_capturing: bool = False
 
     # ------------------------------------------------------------------
@@ -82,9 +83,8 @@ class AudioCaptureService:
 
     @property
     def rms(self) -> float:
-        """目前幀的 RMS 音量（執行緒安全讀取）。"""
-        with self._rms_lock:
-            return self._rms
+        """目前幀的 RMS 音量。CPython GIL 保證 float 賦值的原子性。"""
+        return self._rms
 
     @property
     def is_capturing(self) -> bool:
@@ -118,17 +118,8 @@ class AudioCaptureService:
 
     @staticmethod
     def _build_extra_settings():
-        """建立平台特定的 InputStream extra_settings。
-
-        Windows WASAPI 共享模式下啟用 auto_convert，讓 OS 音訊引擎
-        自動處理取樣率轉換（針對不原生支援 16kHz 的裝置）。
-        """
-        if sys.platform == "win32":
-            try:
-                return sd.WasapiSettings(auto_convert=True)
-            except Exception:
-                return None
-        return None
+        """建立平台特定的 InputStream extra_settings（委派至 audio_utils）。"""
+        return build_wasapi_extra_settings()
 
     # ------------------------------------------------------------------
     # 擷取控制
@@ -211,6 +202,14 @@ class AudioCaptureService:
         self._stop_stream()
         logger.info("音訊擷取已停止")
 
+    def __enter__(self) -> "AudioCaptureService":
+        """支援 with 語句；回傳 self（start 由呼叫端負責）。"""
+        return self
+
+    def __exit__(self, *_) -> None:
+        """離開 with 區塊時自動停止串流，防止資源洩漏。"""
+        self.stop()
+
     def set_device(self, device_index: Union[int, str]) -> None:
         """執行時切換輸入裝置。
 
@@ -235,7 +234,9 @@ class AudioCaptureService:
     # ------------------------------------------------------------------
 
     def get_frame(self, timeout: float = 0.05) -> Optional[np.ndarray]:
-        """從 queue 取出下一個音訊幀（FIFO）。
+        """從幀緩衝取出最舊的音訊幀（FIFO）。
+
+        以短輪詢取代 Condition variable；輪詢間隔 1ms，最多等待 timeout 秒。
 
         Args:
             timeout: 等待逾時秒數（預設 50ms）
@@ -243,10 +244,15 @@ class AudioCaptureService:
         Returns:
             一維 float32 陣列（512 樣本），或逾時時回傳 None。
         """
-        try:
-            return self._frame_queue.get(timeout=timeout)
-        except queue.Empty:
-            return None
+        deadline = time.monotonic() + timeout
+        while True:
+            try:
+                return self._frame_queue.popleft()
+            except IndexError:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    return None
+                time.sleep(min(0.001, remaining))
 
     # ------------------------------------------------------------------
     # 內部實作
@@ -294,20 +300,11 @@ class AudioCaptureService:
         # 寫入環形緩衝區
         self._ring_buffer.write(audio_frame)
 
-        # 計算 RMS（供 UI 波形顯示）
-        rms_value = compute_rms(audio_frame)
-        with self._rms_lock:
-            self._rms = rms_value
+        # 計算 RMS（供 UI 波形顯示）；CPython float 賦值受 GIL 保護，無需 Lock。
+        self._rms = compute_rms(audio_frame)
 
-        # 非阻塞放入幀 queue；若滿則丟棄最舊幀
-        try:
-            self._frame_queue.put_nowait(audio_frame)
-        except queue.Full:
-            try:
-                self._frame_queue.get_nowait()
-                self._frame_queue.put_nowait(audio_frame)
-            except queue.Empty:
-                pass
+        # deque(maxlen=N).append 在緩衝區滿時自動丟棄最舊幀，無 TOCTOU 問題。
+        self._frame_queue.append(audio_frame)
 
 
 # ---------------------------------------------------------------------------

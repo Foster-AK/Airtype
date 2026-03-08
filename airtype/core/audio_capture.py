@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import queue
+import sys
 import threading
 from dataclasses import dataclass
 from pathlib import Path
@@ -112,6 +113,24 @@ class AudioCaptureService:
         return result
 
     # ------------------------------------------------------------------
+    # 平台特定設定
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _build_extra_settings():
+        """建立平台特定的 InputStream extra_settings。
+
+        Windows WASAPI 共享模式下啟用 auto_convert，讓 OS 音訊引擎
+        自動處理取樣率轉換（針對不原生支援 16kHz 的裝置）。
+        """
+        if sys.platform == "win32":
+            try:
+                return sd.WasapiSettings(auto_convert=True)
+            except Exception:
+                return None
+        return None
+
+    # ------------------------------------------------------------------
     # 擷取控制
     # ------------------------------------------------------------------
 
@@ -133,6 +152,7 @@ class AudioCaptureService:
         sd_device: Union[int, str, None] = None if device == "default" else device
 
         self._stop_stream()
+        extra_settings = self._build_extra_settings()
 
         try:
             self._stream = sd.InputStream(
@@ -142,6 +162,7 @@ class AudioCaptureService:
                 dtype=DTYPE,
                 blocksize=BLOCKSIZE,
                 callback=self._callback,
+                extra_settings=extra_settings,
             )
             self._stream.start()
             self._is_capturing = True
@@ -168,6 +189,7 @@ class AudioCaptureService:
                         dtype=DTYPE,
                         blocksize=BLOCKSIZE,
                         callback=self._callback,
+                        extra_settings=extra_settings,
                     )
                     self._stream.start()
                     self._is_capturing = True

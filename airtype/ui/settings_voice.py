@@ -65,11 +65,21 @@ if _PYSIDE6_AVAILABLE:
 
         def run(self) -> None:
             try:
+                import sys
+
                 import numpy as np
                 import sounddevice as sd
 
                 recorded: list = []
                 device_arg = None if self._device == "default" else self._device
+
+                # Windows WASAPI: 啟用 auto_convert 讓 OS 處理取樣率轉換
+                extra_settings = None
+                if sys.platform == "win32":
+                    try:
+                        extra_settings = sd.WasapiSettings(auto_convert=True)
+                    except Exception:
+                        pass
 
                 def _callback(indata, frames, time, status):
                     chunk = indata[:, 0]
@@ -84,6 +94,7 @@ if _PYSIDE6_AVAILABLE:
                     dtype="float32",
                     callback=_callback,
                     device=device_arg,
+                    extra_settings=extra_settings,
                 ):
                     sd.sleep(int(self._DURATION_S * 1000))
 

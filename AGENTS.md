@@ -1,3 +1,4 @@
+- 所有回應、思考過程、規格、文件、程式碼註解都使用繁體中文
 <!-- SPECTRA:START v1.0.0 -->
 
 # Spectra Instructions

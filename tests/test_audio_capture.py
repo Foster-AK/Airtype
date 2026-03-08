@@ -452,5 +452,77 @@ class TestInvalidDeviceFallback(unittest.TestCase):
             service.stop()
 
 
+# ---------------------------------------------------------------------------
+# WASAPI auto_convert extra_settings 測試
+# ---------------------------------------------------------------------------
+
+class TestWasapiExtraSettings(unittest.TestCase):
+    """WASAPI auto_convert 平台特定設定測試。"""
+
+    def test_extra_settings_wasapi_on_windows(self):
+        """3.1: Windows 上 extra_settings 包含 WasapiSettings(auto_convert=True)。"""
+        from airtype.core.audio_capture import AudioCaptureService
+
+        mock_wasapi_instance = MagicMock()
+        with patch("sys.platform", "win32"), \
+             patch("sounddevice.WasapiSettings", return_value=mock_wasapi_instance) as mock_cls:
+            result = AudioCaptureService._build_extra_settings()
+            mock_cls.assert_called_once_with(auto_convert=True)
+            self.assertEqual(result, mock_wasapi_instance)
+
+    def test_extra_settings_none_on_non_windows(self):
+        """3.2: 非 Windows 上 extra_settings 為 None。"""
+        from airtype.core.audio_capture import AudioCaptureService
+
+        with patch("sys.platform", "linux"):
+            result = AudioCaptureService._build_extra_settings()
+            self.assertIsNone(result)
+
+    def test_fallback_path_passes_extra_settings(self):
+        """3.3: fallback 路徑也正確傳遞 extra_settings。"""
+        import sounddevice as sd
+
+        from airtype.config import AirtypeConfig
+        from airtype.core.audio_capture import AudioCaptureService
+
+        config = AirtypeConfig()
+        call_kwargs: list = []
+
+        class MockInputStream:
+            def __init__(self, **kwargs):
+                call_kwargs.append(kwargs)
+                if kwargs.get("device") == 9999:
+                    raise sd.PortAudioError("Invalid device")
+
+            def start(self):
+                pass
+
+            def stop(self):
+                pass
+
+            def close(self):
+                pass
+
+        mock_extra = MagicMock()
+        with patch("sounddevice.InputStream", MockInputStream), \
+             patch.object(AudioCaptureService, "_build_extra_settings", return_value=mock_extra):
+            service = AudioCaptureService(config)
+            service.start(device=9999)
+            # 主路徑和 fallback 路徑都應傳遞 extra_settings
+            self.assertEqual(len(call_kwargs), 2)
+            self.assertEqual(call_kwargs[0]["extra_settings"], mock_extra)
+            self.assertEqual(call_kwargs[1]["extra_settings"], mock_extra)
+            service.stop()
+
+    def test_extra_settings_fallback_when_wasapi_unavailable(self):
+        """3.4: WasapiSettings 不可用時回退至 None。"""
+        from airtype.core.audio_capture import AudioCaptureService
+
+        with patch("sys.platform", "win32"), \
+             patch("sounddevice.WasapiSettings", side_effect=AttributeError("no WasapiSettings")):
+            result = AudioCaptureService._build_extra_settings()
+            self.assertIsNone(result)
+
+
 if __name__ == "__main__":
     unittest.main()

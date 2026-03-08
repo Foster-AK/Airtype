@@ -145,6 +145,11 @@ class QwenPyTorchEngine:
         """PyTorch CUDA 批次路徑不支援串流辨識，回傳空部分結果。"""
         return PartialResult(text="", is_final=False)
 
+    @property
+    def supports_hot_words(self) -> bool:
+        """Qwen3-ASR PyTorch CUDA 不支援原生熱詞偏置。"""
+        return False
+
     def set_hot_words(self, words: list[HotWord]) -> None:
         """設定熱詞列表，用於語境偏移。
 

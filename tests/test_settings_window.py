@@ -228,16 +228,16 @@ class TestSettingsVoicePageDeviceRefresh:
 
         assert page._device_combo.count() == 3  # default + 2 devices
         assert page._device_combo.itemText(1) == "麥克風 A"
-        assert page._device_combo.itemData(1) == "麥克風 A"
+        assert page._device_combo.itemData(1) == 1
         assert page._device_combo.itemText(2) == "麥克風 C"
-        assert page._device_combo.itemData(2) == "麥克風 C"
+        assert page._device_combo.itemData(2) == 3
 
     def test_refresh_restores_saved_device(self, qapp, dummy_config):
         """_refresh_devices() 應從 config 還原已選裝置（依名稱匹配）。"""
         pytest.importorskip("PySide6")
         from unittest.mock import patch
 
-        dummy_config.voice.input_device = "麥克風 C"
+        dummy_config.voice.input_device = 3
         page = self._make_page(qapp, dummy_config)
 
         fake_devices = [
@@ -247,7 +247,7 @@ class TestSettingsVoicePageDeviceRefresh:
         with patch("airtype.ui.settings_voice.list_input_devices", return_value=fake_devices):
             page._refresh_devices()
 
-        assert page._device_combo.currentData() == "麥克風 C"
+        assert page._device_combo.currentData() == 3
 
     def test_refresh_with_no_devices_shows_only_default(self, qapp, dummy_config):
         """無裝置時下拉選單應只有系統預設項目。"""

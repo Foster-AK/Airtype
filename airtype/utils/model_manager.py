@@ -315,15 +315,26 @@ class ModelManager:
             raise KeyError(f"模型 '{model_id}' 不在 manifest 中")
         info = self._models[model_id]
         dest = self._download_dir / info.filename
-        if not dest.exists():
-            return False
-        try:
-            dest.unlink()
-            logger.info("已刪除模型檔案：%s", dest)
-            return True
-        except OSError as exc:
-            logger.error("刪除模型檔案失敗：%s", exc)
-            return False
+        deleted = False
+        # 嘗試刪除檔案
+        if dest.is_file():
+            try:
+                dest.unlink()
+                logger.info("已刪除模型檔案：%s", dest)
+                deleted = True
+            except OSError as exc:
+                logger.error("刪除模型檔案失敗：%s", exc)
+        # 對 .zip 類型，額外嘗試刪除去掉 .zip 後綴的目錄
+        if info.filename.endswith(".zip"):
+            dir_path = self._download_dir / info.filename[:-4]
+            if dir_path.is_dir():
+                try:
+                    shutil.rmtree(dir_path)
+                    logger.info("已刪除模型目錄：%s", dir_path)
+                    deleted = True
+                except OSError as exc:
+                    logger.error("刪除模型目錄失敗：%s", exc)
+        return deleted
 
     def get_model_path(self, model_id: str) -> Optional[str]:
         """回傳已下載模型的絕對路徑。

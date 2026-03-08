@@ -176,6 +176,11 @@ class SherpaOnnxEngine:
 
         return PartialResult(text=text, is_final=is_endpoint)
 
+    @property
+    def supports_hot_words(self) -> bool:
+        """sherpa-onnx 原生支援熱詞偏置。"""
+        return True
+
     def set_hot_words(self, words: list[HotWord]) -> None:
         """設定熱詞列表，並寫入臨時檔案以供 OfflineRecognizer 使用。
 
@@ -269,18 +274,50 @@ class SherpaOnnxEngine:
         tokens = config.get("tokens", str(model_dir / "tokens.txt"))
         model_file = config.get("model", str(model_dir / "model.onnx"))
 
+        hw_kwargs: dict[str, Any] = {}
+        if self._hotwords_file_path:
+            hw_kwargs["hotwords_file"] = self._hotwords_file_path
+
         if self._model_type == "sensevoice":
-            return sherpa_onnx.OfflineRecognizer.from_sense_voice(
-                model=model_file,
-                tokens=tokens,
-                language="auto",
-                use_itn=False,
-            )
+            try:
+                return sherpa_onnx.OfflineRecognizer.from_sense_voice(
+                    model=model_file,
+                    tokens=tokens,
+                    language="auto",
+                    use_itn=False,
+                    **hw_kwargs,
+                )
+            except TypeError:
+                if hw_kwargs:
+                    logger.warning(
+                        "sherpa-onnx from_sense_voice() 不支援 hotwords_file，"
+                        "退回無熱詞模式"
+                    )
+                    return sherpa_onnx.OfflineRecognizer.from_sense_voice(
+                        model=model_file,
+                        tokens=tokens,
+                        language="auto",
+                        use_itn=False,
+                    )
+                raise
         else:  # paraformer
-            return sherpa_onnx.OfflineRecognizer.from_paraformer(
-                paraformer=model_file,
-                tokens=tokens,
-            )
+            try:
+                return sherpa_onnx.OfflineRecognizer.from_paraformer(
+                    paraformer=model_file,
+                    tokens=tokens,
+                    **hw_kwargs,
+                )
+            except TypeError:
+                if hw_kwargs:
+                    logger.warning(
+                        "sherpa-onnx from_paraformer() 不支援 hotwords_file，"
+                        "退回無熱詞模式"
+                    )
+                    return sherpa_onnx.OfflineRecognizer.from_paraformer(
+                        paraformer=model_file,
+                        tokens=tokens,
+                    )
+                raise
 
     def _build_online_recognizer(
         self, sherpa_onnx: Any, model_dir: Path, config: dict[str, Any]
@@ -332,7 +369,7 @@ class SherpaOnnxEngine:
             mode="w", suffix=".txt", delete=False, encoding="utf-8"
         ) as f:
             for hw in self._hot_words:
-                f.write(hw.word + "\n")
+                f.write(f"{hw.word} :{hw.weight}\n")
             self._hotwords_file_path = f.name
 
         logger.debug("熱詞已寫入臨時檔案：%s", self._hotwords_file_path)

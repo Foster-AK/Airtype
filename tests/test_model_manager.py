@@ -1090,10 +1090,99 @@ class TestDeleteModel(unittest.TestCase):
         result = self.manager.delete_model("test-asr")
         self.assertFalse(result)
 
+    def test_delete_nonexistent_zip_model_returns_false(self):
+        """刪除不存在的 .zip 模型（檔案與目錄皆不存在）應回傳 False。"""
+        manifest = {
+            "models": [
+                {
+                    "id": "test-zip-model",
+                    "filename": "test_zip_model.zip",
+                    "size_bytes": 500,
+                    "category": "asr",
+                    "description": "Test Zip Model",
+                    "urls": ["https://example.com/test_zip_model.zip"],
+                    "fallback_urls": [],
+                    "sha256": "",
+                }
+            ]
+        }
+        self.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        manager = ModelManager(
+            manifest_path=str(self.manifest_path),
+            download_dir=self.tmp,
+        )
+        result = manager.delete_model("test-zip-model")
+        self.assertFalse(result)
+
     def test_delete_unknown_model_id_raises_key_error(self):
         """傳入未知 model_id 應拋出 KeyError。"""
         with self.assertRaises(KeyError):
             self.manager.delete_model("nonexistent-model")
+
+    def test_delete_existing_directory_returns_true(self):
+        """刪除目錄型模型（HF repo 下載）應回傳 True 並遞迴刪除目錄。"""
+        # 建立 manifest 含 .zip filename 的模型
+        manifest = {
+            "models": [
+                {
+                    "id": "test-dir-model",
+                    "filename": "test_dir_model.zip",
+                    "size_bytes": 500,
+                    "category": "asr",
+                    "description": "Test Dir Model",
+                    "urls": ["https://example.com/test_dir_model.zip"],
+                    "fallback_urls": [],
+                    "sha256": "",
+                }
+            ]
+        }
+        self.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        manager = ModelManager(
+            manifest_path=str(self.manifest_path),
+            download_dir=self.tmp,
+        )
+        # 建立目錄型模型（無 .zip 檔案）
+        model_dir = Path(self.tmp) / "test_dir_model"
+        model_dir.mkdir()
+        (model_dir / "model.bin").write_bytes(b"fake")
+        (model_dir / "config.json").write_text("{}", encoding="utf-8")
+
+        result = manager.delete_model("test-dir-model")
+        self.assertTrue(result)
+        self.assertFalse(model_dir.exists())
+
+    def test_delete_both_zip_and_directory_returns_true(self):
+        """同時存在 .zip 檔案和解壓目錄時，兩者皆應被刪除。"""
+        manifest = {
+            "models": [
+                {
+                    "id": "test-both-model",
+                    "filename": "test_both_model.zip",
+                    "size_bytes": 500,
+                    "category": "asr",
+                    "description": "Test Both Model",
+                    "urls": ["https://example.com/test_both_model.zip"],
+                    "fallback_urls": [],
+                    "sha256": "",
+                }
+            ]
+        }
+        self.manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        manager = ModelManager(
+            manifest_path=str(self.manifest_path),
+            download_dir=self.tmp,
+        )
+        # 建立 .zip 檔案和目錄
+        zip_file = Path(self.tmp) / "test_both_model.zip"
+        zip_file.write_bytes(b"fake zip")
+        model_dir = Path(self.tmp) / "test_both_model"
+        model_dir.mkdir()
+        (model_dir / "model.bin").write_bytes(b"fake")
+
+        result = manager.delete_model("test-both-model")
+        self.assertTrue(result)
+        self.assertFalse(zip_file.exists())
+        self.assertFalse(model_dir.exists())
 
 
 # ---------------------------------------------------------------------------

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from airtype.config import AirtypeConfig
+    from airtype.core.asr_engine import ASREngineRegistry
     from airtype.core.dictionary import DictionaryEngine
 
 logger = logging.getLogger(__name__)
@@ -62,12 +63,16 @@ if _PYSIDE6_AVAILABLE:
             config: "AirtypeConfig",
             schedule_save_fn=None,
             dictionary_engine: Optional["DictionaryEngine"] = None,
+            on_hot_words_changed=None,
+            asr_registry: Optional["ASREngineRegistry"] = None,
             parent: Optional[QWidget] = None,
         ) -> None:
             super().__init__(parent)
             self._config = config
             self._schedule_save = schedule_save_fn
             self._dict_engine = dictionary_engine
+            self._on_hot_words_changed = on_hot_words_changed
+            self._asr_registry = asr_registry
             self._current_set: str = "default"
             self._build_ui()
             self._reload_sets_list()
@@ -139,6 +144,17 @@ if _PYSIDE6_AVAILABLE:
             box = QGroupBox(tr("settings.dictionary.hot_words_group"))
             layout = QVBoxLayout(box)
             layout.setSpacing(4)
+
+            # 引擎不支援熱詞時的警告標籤
+            self._hw_warning = QLabel(tr("settings.dictionary.hw_unsupported_warning"))
+            self._hw_warning.setWordWrap(True)
+            self._hw_warning.setStyleSheet(
+                "QLabel { color: #b35900; background-color: #fff3cd; "
+                "border: 1px solid #ffc107; border-radius: 4px; padding: 6px; }"
+            )
+            self._hw_warning.setVisible(False)
+            layout.addWidget(self._hw_warning)
+            self._update_hw_warning()
 
             # 表格
             self._hw_table = QTableWidget(0, 3)
@@ -268,6 +284,7 @@ if _PYSIDE6_AVAILABLE:
             self._btn_add_set.setToolTip(tr("settings.dictionary.add_set_tooltip"))
             self._btn_del_set.setToolTip(tr("settings.dictionary.del_set_tooltip"))
             self._hw_group.setTitle(tr("settings.dictionary.hot_words_group"))
+            self._hw_warning.setText(tr("settings.dictionary.hw_unsupported_warning"))
             self._hw_table.setHorizontalHeaderLabels([
                 tr("settings.dictionary.hw_col.enabled"),
                 tr("settings.dictionary.hw_col.word"),
@@ -539,6 +556,12 @@ if _PYSIDE6_AVAILABLE:
             elif self._current_set == "default":
                 self._config.dictionary.hot_words = hot_words
 
+            if self._on_hot_words_changed is not None:
+                try:
+                    self._on_hot_words_changed()
+                except Exception as exc:
+                    logger.warning("熱詞變更回呼失敗：%s", exc)
+
         # ── 事件：替換規則表格 ──────────────────────────────────────────────
 
         def _on_rr_changed(self, item: "QTableWidgetItem") -> None:
@@ -662,6 +685,17 @@ if _PYSIDE6_AVAILABLE:
                 QMessageBox.critical(self, "匯出失敗", str(exc))
 
         # ── 輔助 ────────────────────────────────────────────────────────────
+
+        def _update_hw_warning(self) -> None:
+            """依 ASR 引擎是否支援熱詞，顯示/隱藏警告標籤。"""
+            if self._asr_registry is None:
+                self._hw_warning.setVisible(False)
+                return
+            engine = self._asr_registry.active_engine
+            if engine is None or getattr(engine, "supports_hot_words", True):
+                self._hw_warning.setVisible(False)
+            else:
+                self._hw_warning.setVisible(True)
 
         def _trigger_save(self) -> None:
             if self._schedule_save is not None:

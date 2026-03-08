@@ -682,6 +682,98 @@ class TestDeviceDropdownButton:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# fix-device-menu-selection 任務 1.1：QActionGroup 互斥勾選（TDD）
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestDeviceMenuCheckmark:
+    """驗證裝置選單使用 QActionGroup 實現互斥勾選。"""
+
+    def test_device_actions_are_checkable(self, qapp):
+        """所有裝置 action 應為 checkable。"""
+        from airtype.ui.overlay import CapsuleOverlay
+
+        overlay = CapsuleOverlay()
+        menu = overlay._device_button.menu()
+        for action in menu.actions():
+            assert action.isCheckable(), f"Action '{action.text()}' 應為 checkable"
+        overlay.close()
+
+    def test_exactly_one_action_checked(self, qapp):
+        """選單中應恰好有一個 action 被勾選。"""
+        from airtype.ui.overlay import CapsuleOverlay
+
+        overlay = CapsuleOverlay()
+        menu = overlay._device_button.menu()
+        checked = [a for a in menu.actions() if a.isChecked()]
+        assert len(checked) == 1, f"應恰好有 1 個勾選，實際 {len(checked)}"
+        overlay.close()
+
+    def test_default_device_checked_initially(self, qapp, dummy_config):
+        """config.voice.input_device='default' 時，預設麥克風應被勾選。"""
+        from airtype.ui.overlay import CapsuleOverlay
+
+        dummy_config.voice.input_device = "default"
+        overlay = CapsuleOverlay(config=dummy_config)
+        menu = overlay._device_button.menu()
+        actions = menu.actions()
+        assert actions[0].isChecked(), "預設麥克風 action 應被勾選"
+        overlay.close()
+
+    def test_action_group_exclusive(self, qapp):
+        """裝置 action 應屬於同一個 exclusive QActionGroup。"""
+        from PySide6.QtGui import QActionGroup
+        from airtype.ui.overlay import CapsuleOverlay
+
+        overlay = CapsuleOverlay()
+        menu = overlay._device_button.menu()
+        groups = set()
+        for action in menu.actions():
+            ag = action.actionGroup()
+            assert ag is not None, f"Action '{action.text()}' 應屬於 QActionGroup"
+            groups.add(ag)
+        assert len(groups) == 1, "所有 action 應屬於同一個 QActionGroup"
+        group = groups.pop()
+        assert group.isExclusive(), "QActionGroup 應為 exclusive 模式"
+        overlay.close()
+
+    def test_checkmark_follows_selection(self, qapp, dummy_config):
+        """選擇不同裝置後，勾選應跟隨至新選取的裝置。"""
+        from airtype.ui.overlay import CapsuleOverlay
+
+        dummy_config.voice.input_device = "default"
+        overlay = CapsuleOverlay(config=dummy_config)
+        menu = overlay._device_button.menu()
+        actions = menu.actions()
+        if len(actions) < 2:
+            pytest.skip("需要至少 2 個裝置才能測試切換")
+        # 觸發第二個 action
+        actions[1].trigger()
+        assert actions[1].isChecked(), "新選取的 action 應被勾選"
+        assert not actions[0].isChecked(), "舊的 action 應取消勾選"
+        overlay.close()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# fix-device-menu-selection 任務 1.2：QMenu indicator 深色背景樣式（TDD）
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TestDeviceMenuIndicatorStyle:
+    """驗證 QMenu stylesheet 包含 indicator 樣式規則。"""
+
+    def test_menu_stylesheet_has_indicator_rule(self, qapp):
+        """QMenu stylesheet 應包含 QMenu::indicator 規則。"""
+        from airtype.ui.overlay import CapsuleOverlay
+
+        overlay = CapsuleOverlay()
+        menu = overlay._device_button.menu()
+        ss = menu.styleSheet()
+        assert "QMenu::indicator" in ss, "stylesheet 應包含 QMenu::indicator 規則"
+        overlay.close()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # 任務 5.1：狀態驅動 UI 更新（TDD）
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -745,6 +837,30 @@ class TestCapsulePositionPersistence:
         x, y = parse_pill_position("center", 1920, 1080)
         assert x == (1920 - CAPSULE_WIDTH) // 2
         assert y == 1080 - CAPSULE_HEIGHT - 80
+
+    def test_device_changed_signal_emitted(self, qapp, dummy_config):
+        """_on_device_selected() 應 emit device_changed Signal，值為裝置 index。"""
+        from unittest.mock import MagicMock
+        from airtype.ui.overlay import CapsuleOverlay
+
+        overlay = CapsuleOverlay(config=dummy_config)
+        spy = MagicMock()
+        overlay.device_changed.connect(spy)
+        overlay._on_device_selected(5)
+        spy.assert_called_once_with(5)
+        overlay.close()
+
+    def test_device_changed_signal_emitted_without_config(self, qapp):
+        """config=None 時 _on_device_selected() 仍應 emit device_changed Signal。"""
+        from unittest.mock import MagicMock
+        from airtype.ui.overlay import CapsuleOverlay
+
+        overlay = CapsuleOverlay(config=None)
+        spy = MagicMock()
+        overlay.device_changed.connect(spy)
+        overlay._on_device_selected(7)
+        spy.assert_called_once_with(7)
+        overlay.close()
 
     def test_connect_controller_stores_reference(self, qapp):
         """connect_controller() 應儲存 controller 參考供 mic_button 使用。"""

@@ -123,6 +123,11 @@ class BreezeAsrEngine:
         """
         return PartialResult(text="", is_final=False)
 
+    @property
+    def supports_hot_words(self) -> bool:
+        """Breeze-ASR 不支援原生熱詞偏置。"""
+        return False
+
     def set_hot_words(self, words: list[HotWord]) -> None:
         """設定熱詞列表（儲存供提示注入）。
 

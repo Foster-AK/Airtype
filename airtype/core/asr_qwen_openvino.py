@@ -344,6 +344,11 @@ class QwenOpenVinoEngine:
         """OpenVINO 批次路徑不支援串流辨識。"""
         return PartialResult(text="", is_final=False)
 
+    @property
+    def supports_hot_words(self) -> bool:
+        """Qwen3-ASR OpenVINO 不支援原生熱詞偏置。"""
+        return False
+
     def set_hot_words(self, words: list[HotWord]) -> None:
         self._hot_words = list(words)
 

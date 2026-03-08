@@ -157,22 +157,66 @@ The `ModelManager` SHALL provide a `list_models_by_category(category: str)` meth
 ---
 ### Requirement: Delete Downloaded Model
 
-The `ModelManager` SHALL provide a `delete_model(model_id: str) -> bool` method that deletes the downloaded model file from the local model directory. The method SHALL return `True` if the file was successfully deleted, and `False` if the file did not exist. The method SHALL raise `KeyError` if the `model_id` is not present in the manifest.
+The `ModelManager` SHALL provide a `delete_model(model_id: str) -> bool` method that deletes the downloaded model file or directory from the local model directory. For models whose `filename` ends with `.zip`, the method SHALL also attempt to delete the extracted directory (filename without the `.zip` extension) using recursive removal. The method SHALL return `True` if any file or directory was successfully deleted, and `False` if neither the file nor the directory existed. The method SHALL raise `KeyError` if the `model_id` is not present in the manifest.
 
 #### Scenario: Delete existing model file
 
-- **WHEN** `delete_model("qwen3-asr-0.6b-openvino")` is called and the model file exists
+- **WHEN** `delete_model("qwen2.5-1.5b")` is called and the model file exists as a single file
 - **THEN** the file SHALL be deleted from the download directory and the method SHALL return `True`
+
+#### Scenario: Delete existing model directory
+
+- **WHEN** `delete_model("qwen3-asr-0.6b-openvino")` is called and the model exists as an extracted directory (filename without `.zip` extension)
+- **THEN** the directory SHALL be recursively deleted from the download directory and the method SHALL return `True`
+
+#### Scenario: Delete model with both zip file and extracted directory
+
+- **WHEN** `delete_model("qwen3-asr-0.6b-openvino")` is called and both the `.zip` file and the extracted directory exist
+- **THEN** both the `.zip` file and the directory SHALL be deleted and the method SHALL return `True`
 
 #### Scenario: Delete non-existent model file
 
-- **WHEN** `delete_model("qwen3-asr-0.6b-openvino")` is called and the model file does not exist
+- **WHEN** `delete_model("qwen3-asr-0.6b-openvino")` is called and neither the model file nor directory exists
 - **THEN** the method SHALL return `False` without raising an error
 
 #### Scenario: Delete unknown model ID
 
 - **WHEN** `delete_model("nonexistent-model")` is called with an ID not in the manifest
 - **THEN** the method SHALL raise a `KeyError`
+
+
+<!-- @trace
+source: fix-model-delete-directory
+updated: 2026-03-08
+code:
+  - airtype/ui/device_selector.py
+  - airtype/core/asr_qwen_vulkan.py
+  - airtype/ui/settings_window.py
+  - airtype/config.py
+  - airtype/__main__.py
+  - locales/en.json
+  - locales/zh_TW.json
+  - airtype/core/asr_breeze.py
+  - airtype/core/asr_qwen_pytorch.py
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/utils/model_manager.py
+  - airtype/ui/settings_dictionary.py
+  - airtype/core/audio_capture.py
+  - airtype/ui/settings_voice.py
+  - airtype/ui/overlay.py
+  - locales/ja.json
+  - airtype/core/asr_engine.py
+  - locales/zh_CN.json
+  - airtype/core/asr_sherpa.py
+tests:
+  - tests/test_asr_engine.py
+  - tests/test_settings_window.py
+  - tests/test_config.py
+  - tests/test_overlay.py
+  - tests/test_audio_capture.py
+  - tests/test_model_manager.py
+  - tests/test_asr_sherpa.py
+-->
 
 ---
 ### Requirement: Get Model File Path

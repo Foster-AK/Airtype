@@ -16,7 +16,7 @@ import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class GeneralConfig:
 
 @dataclass
 class VoiceConfig:
-    input_device: str = "default"
+    input_device: Union[str, int] = "default"
     noise_reduction: bool = False
     asr_model: str = "qwen3-asr-0.6b"
     asr_inference_backend: str = "auto"

@@ -153,6 +153,34 @@ class AudioCaptureService:
             )
         except Exception as exc:
             self._stream = None
+            # 若以 int index 開啟失敗，fallback 至系統預設裝置
+            if isinstance(sd_device, int):
+                logger.warning(
+                    "裝置 index %d 無效（%s），退回系統預設裝置",
+                    sd_device,
+                    exc,
+                )
+                try:
+                    self._stream = sd.InputStream(
+                        device=None,
+                        samplerate=SAMPLE_RATE,
+                        channels=CHANNELS,
+                        dtype=DTYPE,
+                        blocksize=BLOCKSIZE,
+                        callback=self._callback,
+                    )
+                    self._stream.start()
+                    self._is_capturing = True
+                    logger.info(
+                        "音訊擷取已啟動（fallback 預設裝置）：取樣率=%d Hz, 幀大小=%d 樣本",
+                        SAMPLE_RATE,
+                        BLOCKSIZE,
+                    )
+                    return
+                except Exception as fallback_exc:
+                    self._stream = None
+                    logger.error("Fallback 預設裝置也啟動失敗：%s", fallback_exc)
+                    raise
             logger.error("音訊串流啟動失敗：%s", exc)
             raise
 
@@ -174,7 +202,7 @@ class AudioCaptureService:
         self._stop_stream()
 
         # 更新設定
-        self._config.voice.input_device = str(device_index)
+        self._config.voice.input_device = device_index
 
         if was_capturing:
             self.start(device=device_index)

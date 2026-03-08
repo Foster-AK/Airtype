@@ -48,7 +48,8 @@ _MANIFEST_PATH = _get_manifest_path()
 _MODEL_ENGINE_MAP: dict[str, list[str]] = {
     "qwen3-asr-1.7b-openvino": ["qwen3-openvino"],
     "qwen3-asr-0.6b-openvino": ["qwen3-openvino"],
-    "qwen3-asr-1.7b": ["qwen3-pytorch-cuda"],
+    "qwen3-asr-0.6b": ["qwen3-openvino", "qwen3-pytorch-cuda", "qwen3-vulkan"],
+    "qwen3-asr-1.7b": ["qwen3-openvino", "qwen3-pytorch-cuda", "qwen3-vulkan"],
     "qwen3-asr-1.7b-vulkan": ["qwen3-vulkan"],
     "qwen3-asr-0.6b-vulkan": ["qwen3-vulkan"],
     "qwen3-asr-0.6b-vulkan-q4": ["qwen3-vulkan"],
@@ -188,6 +189,11 @@ class ASREngine(Protocol):
         """
         ...
 
+    @property
+    def supports_hot_words(self) -> bool:
+        """此引擎是否原生支援熱詞偏置。"""
+        ...
+
     def unload(self) -> None:
         """卸載模型並釋放記憶體與 GPU 資源。"""
         ...
@@ -221,6 +227,7 @@ class ASREngineRegistry:
         # 閒置卸載監控（懶加載與按需模型管理，符合 PRD §10.1）
         self._idle_unloader = None  # type: Optional[Any]
         self._idle_timeout_sec: float = 5.0 * 60  # 預設 5 分鐘
+        self.on_engine_changed: Optional[Callable[[str], None]] = None
 
     # ------------------------------------------------------------------
     # 登錄
@@ -296,6 +303,9 @@ class ASREngineRegistry:
             timeout_sec=self._idle_timeout_sec,
         )
         self._idle_unloader.start()
+
+        if self.on_engine_changed is not None:
+            self.on_engine_changed(engine_id)
 
     # ------------------------------------------------------------------
     # 屬性
@@ -422,16 +432,60 @@ class ASREngineRegistry:
                 return str(models_dir / filename)
         return None
 
+    @staticmethod
+    def _resolve_model_path_by_engine(
+        family_prefix: str, engine_id: str,
+    ) -> Optional[str]:
+        """以家族名稱前綴 + 引擎 ID 從 manifest 搜尋模型路徑（後備策略）。
+
+        當 config 中的 asr_model 為家族名（如 "qwen3-asr-0.6b"）而非
+        manifest 中的完整 ID（如 "qwen3-asr-0.6b-openvino"）時使用。
+
+        搜尋條件：manifest 條目 ID 以 family_prefix 開頭，且其
+        inference_engine（經 alias 轉換後）等於 engine_id。
+
+        Returns:
+            模型路徑字串，若找不到則回傳 None。
+        """
+        try:
+            with _MANIFEST_PATH.open(encoding="utf-8") as f:
+                manifest = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return None
+        for entry in manifest.get("models", []):
+            entry_id = entry.get("id", "")
+            if not entry_id.startswith(family_prefix):
+                continue
+            raw_engine = entry.get("inference_engine", "")
+            resolved = _INFERENCE_ENGINE_ALIAS.get(raw_engine, raw_engine)
+            if resolved == engine_id:
+                filename = entry.get("filename", "")
+                if not filename:
+                    continue
+                models_dir = Path.home() / ".airtype" / "models"
+                if filename.endswith(".zip"):
+                    return str(models_dir / Path(filename).stem)
+                return str(models_dir / filename)
+        return None
+
     def _prepare_active_engine(self, model_id: str) -> None:
         """嘗試為當前作用中引擎設定模型路徑（延遲載入）。
 
         若引擎有 ``prepare`` 方法，從 manifest 解析模型路徑後呼叫之。
+        當 model_id 為家族名（如 "qwen3-asr-0.6b"）而非 manifest 中的具體 ID 時，
+        會以作用中引擎的 inference_engine 為條件，搜尋 manifest 中 ID 以 model_id
+        開頭的條目作為後備。
         失敗時僅記錄警告，不阻擋引擎登錄。
         """
         engine = self._active
         if engine is None or not hasattr(engine, "prepare"):
             return
         model_path = self._resolve_model_path_from_manifest(model_id)
+        # 後備：model_id 為家族名（manifest 中無精確匹配）→ 按引擎 ID 搜尋
+        if model_path is None and self._active_id is not None:
+            model_path = self._resolve_model_path_by_engine(
+                model_id, self._active_id,
+            )
         if model_path:
             try:
                 engine.prepare(model_path)

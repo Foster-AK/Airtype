@@ -151,6 +151,7 @@
   "settings.dictionary.add_set_tooltip": "Add dictionary set",
   "settings.dictionary.del_set_tooltip": "Delete selected set",
   "settings.dictionary.hot_words_group": "Hot Words",
+  "settings.dictionary.hw_unsupported_warning": "⚠ The current engine does not support hot word boosting. Hot word settings will have no effect. Consider using replacement rules instead.",
   "settings.dictionary.hw_col.enabled": "Enabled",
   "settings.dictionary.hw_col.word": "Word",
   "settings.dictionary.hw_col.weight": "Weight",

@@ -75,3 +75,5 @@
 | 變更 | 說明 |
 |------|------|
 | 01-project-setup | 初始規格 — 定義設定 dataclass 模型、持久化、目錄初始化與版本追蹤 |
+
+## Requirements

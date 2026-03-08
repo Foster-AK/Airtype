@@ -10,7 +10,7 @@ This capability defines how Airtype captures real-time audio input from the host
 
 ### Requirement: Audio Stream Capture
 
-The system SHALL capture audio from the selected input device at 16000 Hz sample rate, 16-bit PCM or float32 format, mono channel, with a buffer size of 512 samples (32 ms per frame).
+The system SHALL capture audio from the selected input device at 16000 Hz sample rate, 16-bit PCM or float32 format, mono channel, with a buffer size of 512 samples (32 ms per frame). When `AudioCaptureService.start()` receives an integer device index that does not correspond to a valid input device, the system SHALL fall back to the system default input device and log a warning.
 
 #### Scenario: Start capture with default device
 
@@ -19,13 +19,50 @@ The system SHALL capture audio from the selected input device at 16000 Hz sample
 
 #### Scenario: Start capture with specified device
 
-- **WHEN** `AudioCaptureService.start()` is called with a specific device index
+- **WHEN** `AudioCaptureService.start()` is called with a specific device index (integer)
 - **THEN** the system SHALL begin capturing audio from that device
+
+#### Scenario: Start capture with invalid device index
+
+- **WHEN** `AudioCaptureService.start()` is called with an integer device index that does not correspond to a valid input device
+- **THEN** the system SHALL log a warning and fall back to capturing from the system default input device
 
 #### Scenario: Stop capture
 
 - **WHEN** `AudioCaptureService.stop()` is called while capturing
 - **THEN** the system SHALL stop the audio stream and release the device
+
+
+<!-- @trace
+source: fix-device-name-collision
+updated: 2026-03-08
+code:
+  - airtype/core/asr_qwen_pytorch.py
+  - airtype/ui/settings_voice.py
+  - airtype/ui/settings_dictionary.py
+  - locales/en.json
+  - locales/zh_TW.json
+  - airtype/core/audio_capture.py
+  - airtype/core/asr_qwen_vulkan.py
+  - locales/zh_CN.json
+  - airtype/ui/overlay.py
+  - airtype/core/asr_engine.py
+  - airtype/core/asr_sherpa.py
+  - airtype/ui/settings_window.py
+  - airtype/config.py
+  - airtype/ui/device_selector.py
+  - locales/ja.json
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/__main__.py
+  - airtype/core/asr_breeze.py
+tests:
+  - tests/test_config.py
+  - tests/test_audio_capture.py
+  - tests/test_asr_engine.py
+  - tests/test_settings_window.py
+  - tests/test_asr_sherpa.py
+  - tests/test_overlay.py
+-->
 
 ---
 ### Requirement: Input Device Enumeration

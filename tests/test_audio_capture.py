@@ -287,7 +287,7 @@ class TestAudioCaptureServiceIntegration(unittest.TestCase):
             service.set_device(1)    # 切換裝置 → 停止 + 重新啟動
             self.assertEqual(start_call_count[0], 2)
             self.assertTrue(service.is_capturing)
-            self.assertEqual(config.voice.input_device, "1")
+            self.assertEqual(config.voice.input_device, 1)
 
             service.stop()
 
@@ -355,6 +355,101 @@ class TestAudioCaptureServiceIntegration(unittest.TestCase):
         names = [d.name for d in devices]
         self.assertEqual(len(devices), 2)
         self.assertEqual(names.count("麥克風 A"), 1)
+
+
+class TestInvalidDeviceFallback(unittest.TestCase):
+    """fix-device-name-collision: invalid device index fallback 測試。"""
+
+    def test_invalid_int_index_falls_back_to_default(self):
+        """傳入不存在的 int device index 時，應 fallback 至系統預設裝置。"""
+        import sounddevice as sd
+
+        from airtype.config import AirtypeConfig
+        from airtype.core.audio_capture import AudioCaptureService
+
+        config = AirtypeConfig()
+        call_log: list = []
+
+        class MockInputStream:
+            def __init__(self, **kwargs):
+                device = kwargs.get("device")
+                call_log.append(device)
+                if device == 9999:
+                    raise sd.PortAudioError("Invalid device")
+
+            def start(self):
+                pass
+
+            def stop(self):
+                pass
+
+            def close(self):
+                pass
+
+        with patch("sounddevice.InputStream", MockInputStream):
+            service = AudioCaptureService(config)
+            # 不應拋異常
+            service.start(device=9999)
+            self.assertTrue(service.is_capturing)
+            # 應該先嘗試 9999，失敗後 fallback 至 None（預設）
+            self.assertEqual(call_log, [9999, None])
+            service.stop()
+
+    def test_valid_int_index_no_fallback(self):
+        """傳入有效 int device index 時，不應 fallback。"""
+        from airtype.config import AirtypeConfig
+        from airtype.core.audio_capture import AudioCaptureService
+
+        config = AirtypeConfig()
+        call_log: list = []
+
+        class MockInputStream:
+            def __init__(self, **kwargs):
+                call_log.append(kwargs.get("device"))
+
+            def start(self):
+                pass
+
+            def stop(self):
+                pass
+
+            def close(self):
+                pass
+
+        with patch("sounddevice.InputStream", MockInputStream):
+            service = AudioCaptureService(config)
+            service.start(device=3)
+            self.assertTrue(service.is_capturing)
+            self.assertEqual(call_log, [3])
+            service.stop()
+
+    def test_default_string_works_normally(self):
+        """device="default" 應正常啟動（sd_device=None）。"""
+        from airtype.config import AirtypeConfig
+        from airtype.core.audio_capture import AudioCaptureService
+
+        config = AirtypeConfig()
+        call_log: list = []
+
+        class MockInputStream:
+            def __init__(self, **kwargs):
+                call_log.append(kwargs.get("device"))
+
+            def start(self):
+                pass
+
+            def stop(self):
+                pass
+
+            def close(self):
+                pass
+
+        with patch("sounddevice.InputStream", MockInputStream):
+            service = AudioCaptureService(config)
+            service.start(device="default")
+            self.assertTrue(service.is_capturing)
+            self.assertEqual(call_log, [None])
+            service.stop()
 
 
 if __name__ == "__main__":

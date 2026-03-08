@@ -69,17 +69,50 @@ At startup, the system SHALL load the ASR engine specified by the `voice.asr_mod
 
 ### Requirement: ASR Engine Protocol
 
-The system SHALL define an `ASREngine` Protocol with the following methods: `load_model(model_path, config)`, `recognize(audio) -> ASRResult`, `recognize_stream(chunk) -> PartialResult`, `set_hot_words(words)`, `set_context(context_text)`, `get_supported_languages() -> list[str]`, and `unload()`. All ASR engine implementations SHALL conform to this Protocol.
+The system SHALL define an `ASREngine` Protocol with the following methods: `load_model(model_path, config)`, `recognize(audio) -> ASRResult`, `recognize_stream(chunk) -> PartialResult`, `set_hot_words(words)`, `set_context(context_text)`, `get_supported_languages() -> list[str]`, and `unload()`. The Protocol SHALL also include a read-only `supports_hot_words: bool` property indicating whether the engine natively supports hot word boosting. All ASR engine implementations SHALL conform to this Protocol.
 
 #### Scenario: Mock Engine Conforms to Protocol
 
-- **WHEN** a mock engine class implements all Protocol methods
+- **WHEN** a mock engine class implements all Protocol methods and the `supports_hot_words` property
 - **THEN** the type system SHALL accept it as a valid ASREngine
 
 #### Scenario: Engine Missing a Method
 
 - **WHEN** a class is missing the `recognize` method
 - **THEN** it SHALL NOT satisfy the ASREngine Protocol
+
+#### Scenario: Engine reports hot words support
+
+- **WHEN** `supports_hot_words` is queried on a sherpa-onnx engine
+- **THEN** it SHALL return `True`
+
+#### Scenario: Engine reports no hot words support
+
+- **WHEN** `supports_hot_words` is queried on a Qwen3-ASR engine
+- **THEN** it SHALL return `False`
+
+
+<!-- @trace
+source: hot-words-engine-sync
+updated: 2026-03-07
+code:
+  - airtype/core/asr_qwen_pytorch.py
+  - locales/zh_CN.json
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/ui/settings_window.py
+  - locales/zh_TW.json
+  - airtype/core/asr_qwen_vulkan.py
+  - airtype/core/asr_sherpa.py
+  - airtype/core/asr_breeze.py
+  - airtype/core/asr_engine.py
+  - airtype/__main__.py
+  - airtype/ui/settings_dictionary.py
+  - locales/en.json
+  - locales/ja.json
+tests:
+  - tests/test_asr_engine.py
+  - tests/test_asr_sherpa.py
+-->
 
 ---
 ### Requirement: ASR Result Data Model
@@ -114,12 +147,45 @@ The system SHALL maintain an `ASREngineRegistry` that maps string engine IDs to 
 ---
 ### Requirement: Runtime Engine Switching
 
-The system SHALL support switching the active ASR engine at runtime via `set_active_engine(id)`. The switch SHALL unload the current engine before loading the new one.
+The system SHALL support switching the active ASR engine at runtime via `set_active_engine(id)`. The switch SHALL unload the current engine before loading the new one. After a successful switch, the registry SHALL invoke the `on_engine_changed` callback (if set) with the new engine ID.
 
 #### Scenario: Switch Active Engine
 
 - **WHEN** `set_active_engine("engine-b")` is called while engine-a is active
 - **THEN** engine-a SHALL be unloaded and engine-b SHALL become the active engine
+
+#### Scenario: Engine changed callback invoked after switch
+
+- **WHEN** `set_active_engine("engine-b")` is called and `on_engine_changed` callback is set
+- **THEN** the callback SHALL be invoked with `"engine-b"` after the switch completes
+
+#### Scenario: No callback set
+
+- **WHEN** `set_active_engine("engine-b")` is called and `on_engine_changed` is None
+- **THEN** the switch SHALL complete normally without error
+
+
+<!-- @trace
+source: hot-words-engine-sync
+updated: 2026-03-07
+code:
+  - airtype/core/asr_qwen_pytorch.py
+  - locales/zh_CN.json
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/ui/settings_window.py
+  - locales/zh_TW.json
+  - airtype/core/asr_qwen_vulkan.py
+  - airtype/core/asr_sherpa.py
+  - airtype/core/asr_breeze.py
+  - airtype/core/asr_engine.py
+  - airtype/__main__.py
+  - airtype/ui/settings_dictionary.py
+  - locales/en.json
+  - locales/ja.json
+tests:
+  - tests/test_asr_engine.py
+  - tests/test_asr_sherpa.py
+-->
 
 ---
 ### Requirement: Load Default Engine from Configuration

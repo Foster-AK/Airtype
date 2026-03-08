@@ -125,6 +125,43 @@ class TestSerializationRoundTrip:
         assert restored.appearance.theme == "dark"
 
 
+class TestIntegerDeviceIndexRoundTrip:
+    """Scenario: Integer device index round-trip（fix-device-name-collision）。"""
+
+    def test_voice_config_accepts_int_device(self):
+        """VoiceConfig(input_device=41) 可建立。"""
+        vc = VoiceConfig(input_device=41)
+        assert vc.input_device == 41
+
+    def test_int_device_round_trip_preserves_type(self):
+        """to_dict → from_dict round-trip 保持 int 型別。"""
+        cfg = AirtypeConfig()
+        cfg.voice.input_device = 41
+        data = cfg.to_dict()
+        assert isinstance(data["voice"]["input_device"], int)
+        restored = AirtypeConfig.from_dict(data)
+        assert restored.voice.input_device == 41
+        assert isinstance(restored.voice.input_device, int)
+
+    def test_default_device_string_preserved(self):
+        """"default" 字串在 round-trip 後仍為字串。"""
+        cfg = AirtypeConfig()
+        assert cfg.voice.input_device == "default"
+        restored = AirtypeConfig.from_dict(cfg.to_dict())
+        assert restored.voice.input_device == "default"
+        assert isinstance(restored.voice.input_device, str)
+
+    def test_int_device_json_persistence(self, tmp_path):
+        """JSON 檔案中 int device index 不會變成字串。"""
+        cfg_file = tmp_path / "config.json"
+        cfg = AirtypeConfig()
+        cfg.voice.input_device = 7
+        cfg.save(cfg_file)
+        loaded = AirtypeConfig.load(cfg_file)
+        assert loaded.voice.input_device == 7
+        assert isinstance(loaded.voice.input_device, int)
+
+
 class TestMissingFieldHandling:
     def test_missing_section_uses_defaults(self):
         # 只提供 general 區段

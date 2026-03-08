@@ -151,6 +151,7 @@
   "settings.dictionary.add_set_tooltip": "新增辭典集",
   "settings.dictionary.del_set_tooltip": "刪除選取辭典集",
   "settings.dictionary.hot_words_group": "熱詞（Hot Words）",
+  "settings.dictionary.hw_unsupported_warning": "⚠ 目前引擎不支援熱詞偏置，熱詞設定將不會生效。建議使用替換規則達成相同效果。",
   "settings.dictionary.hw_col.enabled": "啟用",
   "settings.dictionary.hw_col.word": "詞彙",
   "settings.dictionary.hw_col.weight": "權重",

@@ -151,6 +151,7 @@
   "settings.dictionary.add_set_tooltip": "辞書セットを追加",
   "settings.dictionary.del_set_tooltip": "選択した辞書セットを削除",
   "settings.dictionary.hot_words_group": "ホットワード（Hot Words）",
+  "settings.dictionary.hw_unsupported_warning": "⚠ 現在のエンジンはホットワードブーストに対応していません。ホットワード設定は効果がありません。代わりに置換ルールの使用をお勧めします。",
   "settings.dictionary.hw_col.enabled": "有効",
   "settings.dictionary.hw_col.word": "単語",
   "settings.dictionary.hw_col.weight": "重み",

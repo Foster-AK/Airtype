@@ -35,12 +35,54 @@ The capsule SHALL display 7 dynamic waveform bars driven by real-time audio RMS 
 ---
 ### Requirement: Audio Device Selector
 
-The capsule SHALL provide audio input device selection via a dropdown arrow button (QToolButton + QMenu) instead of a QComboBox. The dropdown SHALL list all available input devices and indicate the currently selected device. The existing `list_input_devices()` function SHALL be reused for device enumeration.
+The capsule SHALL provide audio input device selection via a dropdown arrow button (QToolButton + QMenu) instead of a QComboBox. The dropdown SHALL list all available input devices and indicate the currently selected device using a checkmark indicator. The menu SHALL use a QActionGroup in exclusive mode to ensure exactly one device is checked at any time. The existing `list_input_devices()` function SHALL be reused for device enumeration.
 
 #### Scenario: Switch Device from Capsule
 
 - **WHEN** the user clicks the dropdown arrow button and selects a different microphone from the popup menu
 - **THEN** audio capture SHALL switch to the selected device
+
+#### Scenario: Current Device Indicated on Menu Open
+
+- **WHEN** the user opens the device dropdown menu
+- **THEN** the menu item matching `config.voice.input_device` SHALL display a checkmark indicator
+- **THEN** all other menu items SHALL NOT display a checkmark
+
+#### Scenario: Checkmark Follows Selection
+
+- **WHEN** the user selects a different device from the menu
+- **THEN** the checkmark SHALL move to the newly selected device
+- **THEN** the previously selected device SHALL no longer display a checkmark
+
+#### Scenario: Checkmark Visible on Dark Background
+
+- **WHEN** the device menu is displayed with the dark theme stylesheet
+- **THEN** the checkmark indicator SHALL be clearly visible against the dark background
+
+
+<!-- @trace
+source: fix-device-menu-selection
+updated: 2026-03-07
+code:
+  - airtype/__main__.py
+  - airtype/core/asr_breeze.py
+  - locales/ja.json
+  - airtype/core/asr_sherpa.py
+  - airtype/ui/settings_dictionary.py
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/core/asr_qwen_vulkan.py
+  - airtype/ui/settings_window.py
+  - airtype/ui/overlay.py
+  - airtype/core/asr_qwen_pytorch.py
+  - locales/en.json
+  - airtype/core/asr_engine.py
+  - locales/zh_TW.json
+  - locales/zh_CN.json
+tests:
+  - tests/test_asr_engine.py
+  - tests/test_overlay.py
+  - tests/test_asr_sherpa.py
+-->
 
 ---
 ### Requirement: Slide Animation
@@ -113,17 +155,44 @@ The capsule SHALL include a microphone toggle button (QToolButton, 32x32 pixels)
 ---
 ### Requirement: Device Dropdown Button
 
-The capsule SHALL include a dropdown arrow button (QToolButton, 20x32 pixels) positioned immediately to the right of the microphone button. The button SHALL use `QToolButton.InstantPopup` mode with a QMenu listing all available audio input devices. The first menu item SHALL be "Default Microphone" with data value "default". Selecting a device from the menu SHALL update `config.voice.input_device`. The device list SHALL be populated using the existing `list_input_devices()` function from `device_selector.py`.
+The capsule SHALL include a dropdown arrow button (QToolButton, 20x32 pixels) positioned immediately to the right of the microphone button. The button SHALL use `QToolButton.InstantPopup` mode with a QMenu listing all available audio input devices. The first menu item SHALL be "Default Microphone" with data value "default". Selecting a device from the menu SHALL update `config.voice.input_device`. The device list SHALL be populated using the existing `list_input_devices()` function from `device_selector.py`. CapsuleOverlay SHALL declare a `device_changed = Signal(str)` class-level signal. When the user selects a device from the dropdown menu, `_on_device_selected()` SHALL emit `device_changed` with the selected device name after updating config, enabling external components to react to the device change.
 
 #### Scenario: Select Device from Dropdown
 
 - **WHEN** the user clicks the dropdown arrow and selects a different microphone from the menu
 - **THEN** the configuration `voice.input_device` SHALL be updated to the selected device name
+- **THEN** CapsuleOverlay SHALL emit `device_changed` with the selected device name
 
 #### Scenario: Default Device Option
 
 - **WHEN** the user opens the device dropdown menu
 - **THEN** the first item SHALL be "Default Microphone" with data value "default"
+
+
+<!-- @trace
+source: fix-device-switch
+updated: 2026-03-08
+code:
+  - airtype/__main__.py
+  - airtype/core/asr_engine.py
+  - airtype/core/asr_qwen_vulkan.py
+  - airtype/ui/settings_window.py
+  - airtype/ui/settings_voice.py
+  - locales/zh_CN.json
+  - locales/zh_TW.json
+  - airtype/core/asr_qwen_pytorch.py
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/core/asr_sherpa.py
+  - airtype/ui/overlay.py
+  - airtype/core/asr_breeze.py
+  - locales/en.json
+  - airtype/ui/settings_dictionary.py
+  - locales/ja.json
+tests:
+  - tests/test_asr_engine.py
+  - tests/test_overlay.py
+  - tests/test_asr_sherpa.py
+-->
 
 ---
 ### Requirement: Vertical Separator

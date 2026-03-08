@@ -103,6 +103,7 @@ try:
         QRect,
         QSize,
         Qt,
+        Signal,
     )
     from PySide6.QtGui import QBrush, QColor, QIcon, QPainter, QPainterPath, QPixmap
     from PySide6.QtWidgets import (
@@ -116,7 +117,6 @@ try:
         QWidget,
     )
 
-    from airtype.ui.device_selector import DeviceSelector
     from airtype.ui.waveform_widget import WaveformWidget
 
     class CapsuleBody(QWidget):
@@ -191,6 +191,8 @@ try:
             overlay.update_rms(rms)   # 更新音波
             overlay.hide_animated()   # 滑出隱藏
         """
+
+        device_changed = Signal(object)
 
         def __init__(
             self,
@@ -336,30 +338,50 @@ try:
 
         def _build_device_menu(self) -> QMenu:
             """建立音訊裝置選單（第一項為預設麥克風）。"""
+            from PySide6.QtGui import QActionGroup
+
             from airtype.ui.device_selector import list_input_devices
 
             menu = QMenu(self)
             menu.setStyleSheet(
                 "QMenu { background: #1e293b; color: white; border: 1px solid #334155; }"
                 "QMenu::item:selected { background: #334155; }"
+                "QMenu::indicator { width: 14px; height: 14px; }"
+                "QMenu::indicator:checked { image: none; border: 2px solid white; border-radius: 2px; background: white; }"
+                "QMenu::indicator:unchecked { image: none; border: 2px solid #64748b; border-radius: 2px; background: transparent; }"
             )
+
+            current_device = "default"
+            if self._config is not None and self._config.voice.input_device:
+                current_device = self._config.voice.input_device
+
+            action_group = QActionGroup(menu)
+            action_group.setExclusive(True)
+
             default_action = menu.addAction("預設麥克風")
             default_action.setData("default")
+            default_action.setCheckable(True)
+            default_action.setChecked(current_device == "default")
+            action_group.addAction(default_action)
             default_action.triggered.connect(
                 lambda: self._on_device_selected("default")
             )
             for dev in list_input_devices():
                 action = menu.addAction(dev["name"])
-                action.setData(dev["name"])
+                action.setData(dev["index"])
+                action.setCheckable(True)
+                action.setChecked(dev["index"] == current_device)
+                action_group.addAction(action)
                 action.triggered.connect(
-                    lambda checked=False, name=dev["name"]: self._on_device_selected(name)
+                    lambda checked=False, idx=dev["index"]: self._on_device_selected(idx)
                 )
             return menu
 
-        def _on_device_selected(self, device_name: str) -> None:
+        def _on_device_selected(self, device_value) -> None:
             """裝置選單選擇後更新 config。"""
             if self._config is not None:
-                self._config.voice.input_device = device_name
+                self._config.voice.input_device = device_value
+            self.device_changed.emit(device_value)
 
         def _make_mic_icon(self) -> QIcon:
             """用 QPainter 繪製麥克風圖示（白色輪廓）。"""

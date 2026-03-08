@@ -88,7 +88,7 @@ try:
         ``device_changed`` Signal。
         """
 
-        device_changed: Signal = Signal(str)
+        device_changed: Signal = Signal(object)
 
         def __init__(
             self,
@@ -106,7 +106,7 @@ try:
             self.clear()
             self.addItem("預設麥克風", "default")
             for d in list_input_devices():
-                self.addItem(d["name"], d["name"])
+                self.addItem(d["name"], d["index"])
             # 恢復設定中記錄的裝置
             if self._config is not None:
                 saved = self._config.voice.input_device
@@ -121,10 +121,12 @@ try:
             self._populate()
 
         def _on_index_changed(self, index: int) -> None:
-            device_name: str = self.itemData(index) or "default"
+            device_value = self.itemData(index)
+            if device_value is None:
+                device_value = "default"
             if self._config is not None:
-                self._config.voice.input_device = device_name
-            self.device_changed.emit(device_name)
+                self._config.voice.input_device = device_value
+            self.device_changed.emit(device_value)
 
 except ImportError:
     logger.debug("DeviceSelector：PySide6 不可用，使用佔位類別")

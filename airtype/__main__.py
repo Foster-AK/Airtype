@@ -168,6 +168,10 @@ def main() -> None:
         logger.warning("DictionaryEngine 載入失敗：%s — 辭典功能停用", exc)
         dictionary_engine = None
 
+    # ── 4.7.1 啟動時注入熱詞至 ASR 引擎 ─────────────────────────────────
+    if dictionary_engine is not None and asr_engine is not None:
+        dictionary_engine.sync_hot_words(asr_engine)
+
     # ── 4.8 PolishEngine（無條件初始化，運行時由 config.llm.enabled 控制）──
     polish_engine = None
     try:
@@ -236,7 +240,25 @@ def main() -> None:
     overlay.connect_controller(controller)
     overlay.show_animated()
 
-    settings_window = SettingsWindow(config=cfg, dictionary_engine=dictionary_engine)
+    def _sync_hot_words_callback():
+        engine = asr_registry.active_engine
+        if dictionary_engine is not None and engine is not None:
+            dictionary_engine.sync_hot_words(engine)
+
+    settings_window = SettingsWindow(
+        config=cfg,
+        dictionary_engine=dictionary_engine,
+        on_hot_words_changed=_sync_hot_words_callback,
+        asr_registry=asr_registry,
+    )
+
+    # ── 引擎切換時自動重新注入熱詞 + 更新 UI 警告 ──────────────────────
+    def _on_engine_changed(engine_id: str) -> None:
+        _sync_hot_words_callback()
+        if hasattr(settings_window, "_page_dictionary"):
+            settings_window._page_dictionary._update_hw_warning()
+
+    asr_registry.on_engine_changed = _on_engine_changed
     settings_window.connect_overlay(overlay)
 
     # 快捷鍵設定變更 → 重新載入 HotkeyManager
@@ -258,8 +280,9 @@ def main() -> None:
         rms_timer.start()
 
     # ── 5.2 裝置選擇器 Signal 連接 ─────────────────────────────────────
-    if audio_capture is not None and hasattr(overlay, "_device_selector"):
-        overlay._device_selector.device_changed.connect(audio_capture.set_device)
+    if audio_capture is not None:
+        overlay.device_changed.connect(audio_capture.set_device)
+        settings_window._page_voice.device_changed.connect(audio_capture.set_device)
 
     # ── 5.3 Settings Window 整合 ───────────────────────────────────────
     # 注意：connect_rms_feed 期望 Qt Signal，但 RMS 採用 QTimer 輪詢架構，

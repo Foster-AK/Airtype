@@ -245,11 +245,15 @@ if _PYSIDE6_AVAILABLE:
             self,
             config: "AirtypeConfig",
             dictionary_engine: Optional["DictionaryEngine"] = None,
+            on_hot_words_changed=None,
+            asr_registry=None,
             parent: Optional[QWidget] = None,
         ) -> None:
             super().__init__(parent)
             self._config = config
             self._dictionary_engine = dictionary_engine
+            self._asr_registry = asr_registry
+            self._on_hot_words_changed = on_hot_words_changed
             self._build_timer()
             self._build_ui()
             self.setWindowTitle(tr("settings.window.title"))
@@ -374,7 +378,9 @@ if _PYSIDE6_AVAILABLE:
             self._page_shortcuts = SettingsShortcutsPage(self._config, save_fn)
             self._page_llm = SettingsLlmPage(self._config, save_fn)
             self._page_dictionary = SettingsDictionaryPage(
-                self._config, save_fn, self._dictionary_engine
+                self._config, save_fn, self._dictionary_engine,
+                on_hot_words_changed=self._on_hot_words_changed,
+                asr_registry=self._asr_registry,
             )
             self._page_about = SettingsAboutPage(self._config)
 

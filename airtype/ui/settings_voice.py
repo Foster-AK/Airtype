@@ -59,7 +59,7 @@ if _PYSIDE6_AVAILABLE:
         _DURATION_S: float = 3.0
         _SAMPLERATE: int = 16_000
 
-        def __init__(self, device: str, parent=None) -> None:
+        def __init__(self, device: "str | int", parent=None) -> None:
             super().__init__(parent)
             self._device = device
 
@@ -110,6 +110,8 @@ if _PYSIDE6_AVAILABLE:
 
     class SettingsVoicePage(QWidget):
         """語音/ASR 設定頁面。"""
+
+        device_changed = Signal(object)
 
         def __init__(
             self,
@@ -315,7 +317,7 @@ if _PYSIDE6_AVAILABLE:
             self._device_combo.clear()
             self._device_combo.addItem(tr("settings.voice.device.default"), "default")
             for d in list_input_devices():
-                self._device_combo.addItem(d["name"], d["name"])
+                self._device_combo.addItem(d["name"], d["index"])
 
             # 還原設定值
             current = self._config.voice.input_device
@@ -347,8 +349,12 @@ if _PYSIDE6_AVAILABLE:
             self._stream_warning.setText(tr("settings.voice.stream_warning"))
 
         def _on_device_changed(self, _text: str) -> None:
-            self._config.voice.input_device = self._device_combo.currentData() or "default"
+            device_value = self._device_combo.currentData()
+            if device_value is None:
+                device_value = "default"
+            self._config.voice.input_device = device_value
             self._save()
+            self.device_changed.emit(device_value)
 
         def _on_noise_changed(self, state: int) -> None:
             self._config.voice.noise_reduction = bool(state)

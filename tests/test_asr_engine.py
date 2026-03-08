@@ -51,6 +51,10 @@ class MockASREngine:
     def get_supported_languages(self) -> list[str]:
         return ["zh-TW", "en"]
 
+    @property
+    def supports_hot_words(self) -> bool:
+        return True
+
     def unload(self) -> None:
         self.unloaded = True
 
@@ -413,3 +417,90 @@ def test_confidence_range():
     r1 = ASRResult(text="", language="en", confidence=1.0)
     assert r0.confidence == 0.0
     assert r1.confidence == 1.0
+
+
+# ---------------------------------------------------------------------------
+# 4.1–4.3 Hot Words Engine Sync 測試
+# ---------------------------------------------------------------------------
+
+
+class MockASREngineWithHotWords(MockASREngine):
+    """支援 supports_hot_words 的 mock 引擎。"""
+
+    @property
+    def supports_hot_words(self) -> bool:
+        return True
+
+
+class MockASREngineNoHotWords(MockASREngine):
+    """不支援 supports_hot_words 的 mock 引擎。"""
+
+    @property
+    def supports_hot_words(self) -> bool:
+        return False
+
+
+def test_supports_hot_words_in_protocol():
+    """supports_hot_words 應為 ASREngine Protocol 屬性。"""
+    from airtype.core.asr_engine import ASREngine
+
+    engine = MockASREngineWithHotWords()
+    assert isinstance(engine, ASREngine)
+    assert engine.supports_hot_words is True
+
+
+def test_sherpa_engine_supports_hot_words():
+    """SherpaOnnxEngine.supports_hot_words 應回傳 True。"""
+    from airtype.core.asr_sherpa import SherpaOnnxEngine
+
+    engine = SherpaOnnxEngine(model_type="sensevoice")
+    assert engine.supports_hot_words is True
+
+
+def test_on_engine_changed_callback_invoked(registry):
+    """set_active_engine() 完成後應呼叫 on_engine_changed callback。"""
+    callback_calls = []
+    registry.on_engine_changed = lambda eid: callback_calls.append(eid)
+    registry.register_engine("engine-a", MockASREngineWithHotWords)
+    registry.register_engine("engine-b", MockASREngineNoHotWords)
+
+    registry.set_active_engine("engine-a")
+    assert callback_calls == ["engine-a"]
+
+    registry.set_active_engine("engine-b")
+    assert callback_calls == ["engine-a", "engine-b"]
+
+
+def test_on_engine_changed_none_no_error(registry):
+    """on_engine_changed 為 None 時切換引擎不應出錯。"""
+    registry.register_engine("mock", MockASREngineWithHotWords)
+    assert registry.on_engine_changed is None
+    registry.set_active_engine("mock")
+
+
+def test_qwen_openvino_no_hot_words():
+    """QwenOpenVinoEngine.supports_hot_words 應回傳 False。"""
+    from airtype.core.asr_qwen_openvino import QwenOpenVinoEngine
+
+    assert QwenOpenVinoEngine().supports_hot_words is False
+
+
+def test_qwen_pytorch_no_hot_words():
+    """QwenPyTorchEngine.supports_hot_words 應回傳 False。"""
+    from airtype.core.asr_qwen_pytorch import QwenPyTorchEngine
+
+    assert QwenPyTorchEngine().supports_hot_words is False
+
+
+def test_qwen_vulkan_no_hot_words():
+    """QwenVulkanEngine.supports_hot_words 應回傳 False。"""
+    from airtype.core.asr_qwen_vulkan import QwenVulkanEngine
+
+    assert QwenVulkanEngine().supports_hot_words is False
+
+
+def test_breeze_no_hot_words():
+    """BreezeAsrEngine.supports_hot_words 應回傳 False。"""
+    from airtype.core.asr_breeze import BreezeAsrEngine
+
+    assert BreezeAsrEngine().supports_hot_words is False

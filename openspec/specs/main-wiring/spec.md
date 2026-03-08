@@ -8,7 +8,7 @@ TBD - created by archiving change '23-main-wiring'. Update Purpose after archive
 
 ### Requirement: Application Entry Point Component Wiring
 
-The application entry point (`__main__.py`) SHALL create and connect all core components in the following order: i18n initialization, AudioCaptureService, VadEngine, ASREngineRegistry (with engine registration), FocusManager, TextInjector, DictionaryEngine, PolishEngine, BatchRecognitionPipeline, HotkeyManager, CoreController (with all dependencies injected), and UI components (CapsuleOverlay, SettingsWindow, SystemTrayIcon).
+The application entry point (`__main__.py`) SHALL create and connect all core components in the following order: i18n initialization, AudioCaptureService, VadEngine, ASREngineRegistry (with engine registration), FocusManager, TextInjector, DictionaryEngine, PolishEngine, BatchRecognitionPipeline, HotkeyManager, CoreController (with all dependencies injected), and UI components (CapsuleOverlay, SettingsWindow, SystemTrayIcon). After DictionaryEngine is successfully initialized and an ASR engine is loaded, the entry point SHALL call `dictionary_engine.sync_hot_words(asr_engine)` to inject active hot words into the ASR engine.
 
 #### Scenario: Full Component Chain Initialization
 
@@ -20,6 +20,41 @@ The application entry point (`__main__.py`) SHALL create and connect all core co
 
 - **WHEN** the application starts with all dependencies installed and models downloaded
 - **THEN** the application SHALL enter the Qt event loop without errors
+
+#### Scenario: Hot Words Injected at Startup
+
+- **WHEN** the application starts with a DictionaryEngine containing enabled hot words and an active ASR engine
+- **THEN** `sync_hot_words(asr_engine)` SHALL be called after DictionaryEngine initialization
+- **THEN** the ASR engine SHALL receive all enabled hot words from active dictionary sets
+
+#### Scenario: Hot Words Skipped When No ASR Engine
+
+- **WHEN** the application starts but no ASR engine is available (asr_engine is None)
+- **THEN** `sync_hot_words()` SHALL NOT be called
+- **THEN** no error SHALL be raised
+
+
+<!-- @trace
+source: fix-hot-words
+updated: 2026-03-07
+code:
+  - airtype/core/asr_breeze.py
+  - airtype/ui/settings_window.py
+  - airtype/core/asr_qwen_pytorch.py
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/__main__.py
+  - locales/zh_TW.json
+  - locales/zh_CN.json
+  - airtype/ui/settings_dictionary.py
+  - locales/en.json
+  - airtype/core/asr_qwen_vulkan.py
+  - airtype/core/asr_engine.py
+  - locales/ja.json
+  - airtype/core/asr_sherpa.py
+tests:
+  - tests/test_asr_sherpa.py
+  - tests/test_asr_engine.py
+-->
 
 ---
 ### Requirement: Graceful Degradation on Component Failure
@@ -77,12 +112,49 @@ The entry point SHALL create a QTimer with 33ms interval that polls AudioCapture
 ---
 ### Requirement: Device Selector Wiring
 
-The entry point SHALL connect CapsuleOverlay's DeviceSelector.device_changed Signal to AudioCaptureService.set_device() so that device switching from the capsule takes effect immediately.
+The entry point SHALL connect CapsuleOverlay's `device_changed` Signal to `AudioCaptureService.set_device()` so that device switching from the capsule takes effect immediately. The entry point SHALL also connect SettingsVoicePage's `device_changed` Signal to `AudioCaptureService.set_device()` so that device switching from the settings window takes effect immediately. Both connections SHALL be established only when AudioCaptureService is available (not None).
 
 #### Scenario: Switch Device from Capsule
 
 - **WHEN** the user selects a different microphone from the capsule device dropdown
 - **THEN** AudioCaptureService SHALL switch to the selected device
+
+#### Scenario: Switch Device from Settings Window
+
+- **WHEN** the user selects a different microphone from the settings voice page device combo
+- **THEN** AudioCaptureService SHALL switch to the selected device
+
+#### Scenario: No Audio Capture Available
+
+- **WHEN** AudioCaptureService is None (initialization failed)
+- **THEN** no device change Signal connections SHALL be established
+- **THEN** no error SHALL be raised
+
+
+<!-- @trace
+source: fix-device-switch
+updated: 2026-03-08
+code:
+  - airtype/__main__.py
+  - airtype/core/asr_engine.py
+  - airtype/core/asr_qwen_vulkan.py
+  - airtype/ui/settings_window.py
+  - airtype/ui/settings_voice.py
+  - locales/zh_CN.json
+  - locales/zh_TW.json
+  - airtype/core/asr_qwen_pytorch.py
+  - airtype/core/asr_qwen_openvino.py
+  - airtype/core/asr_sherpa.py
+  - airtype/ui/overlay.py
+  - airtype/core/asr_breeze.py
+  - locales/en.json
+  - airtype/ui/settings_dictionary.py
+  - locales/ja.json
+tests:
+  - tests/test_asr_engine.py
+  - tests/test_overlay.py
+  - tests/test_asr_sherpa.py
+-->
 
 ---
 ### Requirement: I18n Language Initialization

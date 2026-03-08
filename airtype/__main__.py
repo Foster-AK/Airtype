@@ -15,10 +15,48 @@
 
 import importlib
 import logging
+import os
 import sys
+from pathlib import Path
+from typing import TextIO
 
 from airtype.config import AirtypeConfig
 from airtype.logging_setup import setup_logging
+
+_DEFAULT_LOCK_PATH = Path.home() / ".airtype" / "airtype.lock"
+
+
+def _acquire_instance_lock(
+    lock_path: Path = _DEFAULT_LOCK_PATH,
+) -> "TextIO | None":
+    """嘗試取得跨平台檔案鎖，防止多個 Airtype 實例同時執行。
+
+    回傳開啟的檔案物件（成功）或 None（失敗／已有實例）。
+    呼叫端負責在結束時 close() 該檔案物件以釋放鎖。
+    """
+    os.makedirs(lock_path.parent, exist_ok=True)
+    try:
+        f = open(lock_path, "w")  # noqa: SIM115
+    except OSError:
+        return None
+
+    try:
+        if sys.platform == "win32":
+            import msvcrt
+
+            msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (OSError, IOError):
+        f.close()
+        return None
+
+    f.write(str(os.getpid()))
+    f.flush()
+    return f
+
 
 # manifest inference_engine → 引擎模組映射
 _ENGINE_MODULE_MAP: dict[str, str] = {
@@ -78,6 +116,13 @@ def _resolve_needed_engine_modules(asr_model: str) -> list[str]:
 
 def main() -> None:
     setup_logging("INFO")
+
+    # ── 單一實例鎖 ──────────────────────────────────────────────────
+    logger = logging.getLogger(__name__)
+    instance_lock = _acquire_instance_lock()
+    if instance_lock is None:
+        logger.warning("已有另一個 Airtype 實例正在執行，本實例將退出。")
+        sys.exit(0)
 
     cfg = AirtypeConfig.load()
     setup_logging(cfg.general.log_level)
@@ -308,6 +353,7 @@ def main() -> None:
     except Exception as exc:
         logger.debug("停止 ASREngineRegistry 時發生例外：%s", exc)
     controller.shutdown()
+    instance_lock.close()
 
     logger.info("Airtype 已關閉")
     sys.exit(exit_code)

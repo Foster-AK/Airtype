@@ -11,6 +11,7 @@
 
 from __future__ import annotations
 
+from contextlib import ExitStack
 from unittest.mock import MagicMock, patch
 
 
@@ -31,6 +32,53 @@ def _new_component_patches(mock_cfg, mock_app):
     }
 
 
+def _early_test_patches(stack, mock_cfg, mock_app, new, **overrides):
+    """在 ExitStack 上進入前 3 個測試共用的所有 patch，回傳各 mock。
+
+    overrides 可傳入需要 as 變數的 patch（如 mock_ctrl_cls、mock_hkm_cls）。
+    """
+    mock_overlay = overrides.get("overlay", MagicMock())
+    mock_sw = overrides.get("sw", MagicMock())
+    mock_tray = overrides.get("tray", MagicMock())
+    mock_ctrl = overrides.get("ctrl", MagicMock())
+    mock_hkm = overrides.get("hkm", MagicMock())
+
+    stack.enter_context(patch("airtype.config.AirtypeConfig.load", return_value=mock_cfg))
+    stack.enter_context(patch("airtype.__main__.setup_logging"))
+    stack.enter_context(patch("airtype.__main__._acquire_instance_lock", return_value=MagicMock()))
+    stack.enter_context(patch("airtype.utils.i18n.set_language"))
+    stack.enter_context(patch("airtype.ui.overlay.CapsuleOverlay", return_value=mock_overlay))
+    stack.enter_context(patch("airtype.ui.settings_window.SettingsWindow", return_value=mock_sw))
+    stack.enter_context(patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mock_tray))
+    mock_ctrl_cls = stack.enter_context(
+        patch("airtype.core.controller.CoreController", return_value=mock_ctrl)
+    )
+    stack.enter_context(patch("airtype.core.controller.init_controller"))
+    mock_hkm_cls = stack.enter_context(
+        patch("airtype.core.hotkey.HotkeyManager", return_value=mock_hkm)
+    )
+    stack.enter_context(patch("airtype.core.audio_capture.AudioCaptureService", return_value=new["audio"]))
+    stack.enter_context(patch("airtype.core.vad.VadEngine", return_value=new["vad"]))
+    stack.enter_context(patch("airtype.core.asr_engine.ASREngineRegistry", return_value=new["registry"]))
+    stack.enter_context(patch("airtype.core.hotkey.FocusManager", return_value=new["focus_mgr"]))
+    stack.enter_context(patch("airtype.core.text_injector.TextInjector", return_value=new["injector"]))
+    stack.enter_context(patch("airtype.core.dictionary.DictionaryEngine", return_value=new["dict_engine"]))
+    stack.enter_context(patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=new["pipeline"]))
+    stack.enter_context(patch("airtype.__main__.importlib"))
+    stack.enter_context(patch("PySide6.QtWidgets.QApplication", return_value=mock_app))
+    stack.enter_context(patch("PySide6.QtGui.QIcon"))
+    stack.enter_context(patch("PySide6.QtCore.QTimer"))
+    stack.enter_context(patch("sys.exit"))
+
+    return {
+        "overlay": mock_overlay,
+        "sw": mock_sw,
+        "tray": mock_tray,
+        "ctrl_cls": mock_ctrl_cls,
+        "hkm_cls": mock_hkm_cls,
+    }
+
+
 def test_connect_overlay_called_during_startup():
     """overlay appearance signals are connected at startup.
 
@@ -42,33 +90,10 @@ def test_connect_overlay_called_during_startup():
     mock_app.exec.return_value = 0
     mock_overlay = MagicMock()
     mock_sw = MagicMock()
-    mock_tray = MagicMock()
-    mock_ctrl = MagicMock()
-    mock_hkm = MagicMock()
     new = _new_component_patches(mock_cfg, mock_app)
 
-    with (
-        patch("airtype.config.AirtypeConfig.load", return_value=mock_cfg),
-        patch("airtype.__main__.setup_logging"),
-        patch("airtype.utils.i18n.set_language"),
-        patch("airtype.ui.overlay.CapsuleOverlay", return_value=mock_overlay),
-        patch("airtype.ui.settings_window.SettingsWindow", return_value=mock_sw),
-        patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mock_tray),
-        patch("airtype.core.controller.CoreController", return_value=mock_ctrl),
-        patch("airtype.core.controller.init_controller"),
-        patch("airtype.core.hotkey.HotkeyManager", return_value=mock_hkm),
-        patch("airtype.core.audio_capture.AudioCaptureService", return_value=new["audio"]),
-        patch("airtype.core.vad.VadEngine", return_value=new["vad"]),
-        patch("airtype.core.asr_engine.ASREngineRegistry", return_value=new["registry"]),
-        patch("airtype.core.hotkey.FocusManager", return_value=new["focus_mgr"]),
-        patch("airtype.core.text_injector.TextInjector", return_value=new["injector"]),
-        patch("airtype.core.dictionary.DictionaryEngine", return_value=new["dict_engine"]),
-        patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=new["pipeline"]),
-        patch("airtype.__main__.importlib"),
-        patch("PySide6.QtWidgets.QApplication", return_value=mock_app),
-        patch("PySide6.QtCore.QTimer"),
-        patch("sys.exit"),
-    ):
+    with ExitStack() as stack:
+        _early_test_patches(stack, mock_cfg, mock_app, new, overlay=mock_overlay, sw=mock_sw)
         from airtype.__main__ import main
         main()
 
@@ -85,43 +110,20 @@ def test_hotkey_manager_created_and_passed_to_controller():
     mock_cfg = MagicMock()
     mock_app = MagicMock()
     mock_app.exec.return_value = 0
-    mock_overlay = MagicMock()
-    mock_sw = MagicMock()
-    mock_tray = MagicMock()
     mock_ctrl = MagicMock()
     mock_hkm = MagicMock()
     new = _new_component_patches(mock_cfg, mock_app)
 
-    with (
-        patch("airtype.config.AirtypeConfig.load", return_value=mock_cfg),
-        patch("airtype.__main__.setup_logging"),
-        patch("airtype.utils.i18n.set_language"),
-        patch("airtype.ui.overlay.CapsuleOverlay", return_value=mock_overlay),
-        patch("airtype.ui.settings_window.SettingsWindow", return_value=mock_sw),
-        patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mock_tray),
-        patch("airtype.core.controller.CoreController", return_value=mock_ctrl) as mock_ctrl_cls,
-        patch("airtype.core.controller.init_controller"),
-        patch("airtype.core.hotkey.HotkeyManager", return_value=mock_hkm) as mock_hkm_cls,
-        patch("airtype.core.audio_capture.AudioCaptureService", return_value=new["audio"]),
-        patch("airtype.core.vad.VadEngine", return_value=new["vad"]),
-        patch("airtype.core.asr_engine.ASREngineRegistry", return_value=new["registry"]),
-        patch("airtype.core.hotkey.FocusManager", return_value=new["focus_mgr"]),
-        patch("airtype.core.text_injector.TextInjector", return_value=new["injector"]),
-        patch("airtype.core.dictionary.DictionaryEngine", return_value=new["dict_engine"]),
-        patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=new["pipeline"]),
-        patch("airtype.__main__.importlib"),
-        patch("PySide6.QtWidgets.QApplication", return_value=mock_app),
-        patch("PySide6.QtCore.QTimer"),
-        patch("sys.exit"),
-    ):
+    with ExitStack() as stack:
+        refs = _early_test_patches(stack, mock_cfg, mock_app, new, ctrl=mock_ctrl, hkm=mock_hkm)
         from airtype.__main__ import main
         main()
 
     # HotkeyManager 必須以 cfg.shortcuts 建立
-    mock_hkm_cls.assert_called_once_with(mock_cfg.shortcuts)
+    refs["hkm_cls"].assert_called_once_with(mock_cfg.shortcuts)
     # CoreController 必須收到 hotkey_manager=mock_hkm（新版本有更多 kwargs）
-    assert mock_ctrl_cls.call_args.kwargs["hotkey_manager"] == mock_hkm
-    assert mock_ctrl_cls.call_args.kwargs["config"] == mock_cfg
+    assert refs["ctrl_cls"].call_args.kwargs["hotkey_manager"] == mock_hkm
+    assert refs["ctrl_cls"].call_args.kwargs["config"] == mock_cfg
 
 
 def test_tray_toggle_voice_connected_to_handle_toggle():
@@ -133,35 +135,12 @@ def test_tray_toggle_voice_connected_to_handle_toggle():
     mock_cfg = MagicMock()
     mock_app = MagicMock()
     mock_app.exec.return_value = 0
-    mock_overlay = MagicMock()
-    mock_sw = MagicMock()
     mock_tray = MagicMock()
-    mock_ctrl = MagicMock()
     mock_hkm = MagicMock()
     new = _new_component_patches(mock_cfg, mock_app)
 
-    with (
-        patch("airtype.config.AirtypeConfig.load", return_value=mock_cfg),
-        patch("airtype.__main__.setup_logging"),
-        patch("airtype.utils.i18n.set_language"),
-        patch("airtype.ui.overlay.CapsuleOverlay", return_value=mock_overlay),
-        patch("airtype.ui.settings_window.SettingsWindow", return_value=mock_sw),
-        patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mock_tray),
-        patch("airtype.core.controller.CoreController", return_value=mock_ctrl),
-        patch("airtype.core.controller.init_controller"),
-        patch("airtype.core.hotkey.HotkeyManager", return_value=mock_hkm),
-        patch("airtype.core.audio_capture.AudioCaptureService", return_value=new["audio"]),
-        patch("airtype.core.vad.VadEngine", return_value=new["vad"]),
-        patch("airtype.core.asr_engine.ASREngineRegistry", return_value=new["registry"]),
-        patch("airtype.core.hotkey.FocusManager", return_value=new["focus_mgr"]),
-        patch("airtype.core.text_injector.TextInjector", return_value=new["injector"]),
-        patch("airtype.core.dictionary.DictionaryEngine", return_value=new["dict_engine"]),
-        patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=new["pipeline"]),
-        patch("airtype.__main__.importlib"),
-        patch("PySide6.QtWidgets.QApplication", return_value=mock_app),
-        patch("PySide6.QtCore.QTimer"),
-        patch("sys.exit"),
-    ):
+    with ExitStack() as stack:
+        _early_test_patches(stack, mock_cfg, mock_app, new, tray=mock_tray, hkm=mock_hkm)
         from airtype.__main__ import main
         main()
 
@@ -209,60 +188,38 @@ def _make_new_mocks():
     }
 
 
-def _new_main_ctx(mocks):
-    """回傳所有新元件 patch 的 context manager 串列。"""
-    return (
-        patch("airtype.config.AirtypeConfig.load", return_value=mocks["cfg"]),
-        patch("airtype.__main__.setup_logging"),           # patch 本地引用
-        patch("airtype.__main__.set_language"),            # patch 本地引用
-        patch("PySide6.QtWidgets.QApplication", return_value=mocks["app"]),
-        patch("PySide6.QtCore.QTimer"),
-        patch("airtype.__main__.AudioCaptureService", return_value=mocks["audio"]),
-        patch("airtype.__main__.VadEngine", return_value=mocks["vad"]),
-        patch("airtype.__main__.ASREngineRegistry", return_value=mocks["registry"]),
-        patch("airtype.__main__.FocusManager", return_value=mocks["focus_mgr"]),
-        patch("airtype.__main__.TextInjector", return_value=mocks["injector"]),
-        patch("airtype.__main__.DictionaryEngine", return_value=mocks["dict_engine"]),
-        patch("airtype.__main__.BatchRecognitionPipeline", return_value=mocks["pipeline"]),
-        patch("airtype.core.controller.CoreController", return_value=mocks["ctrl"]),
-        patch("airtype.core.controller.init_controller"),
-        patch("airtype.core.hotkey.HotkeyManager", return_value=mocks["hkm"]),
-        patch("airtype.ui.overlay.CapsuleOverlay", return_value=mocks["overlay"]),
-        patch("airtype.ui.settings_window.SettingsWindow", return_value=mocks["sw"]),
-        patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mocks["tray"]),
-        patch("airtype.__main__.importlib"),               # 阻止 ASR 動態 import
-        patch("sys.exit"),
-    )
-
-
 def _call_main_new(mocks):
     """執行 main() 並回傳 ctrl_cls mock。
 
     Note: setup_logging 以模組層級 import 引用，需 patch airtype.__main__.setup_logging。
     其他元件以函式內 import 引用，需 patch 其原始模組路徑。
     """
-    with (
-        patch("airtype.config.AirtypeConfig.load", return_value=mocks["cfg"]),
-        patch("airtype.__main__.setup_logging"),                          # 模組層級 ref
-        patch("airtype.utils.i18n.set_language"),                         # 函式內 from import
-        patch("PySide6.QtWidgets.QApplication", return_value=mocks["app"]),
-        patch("PySide6.QtCore.QTimer"),
-        patch("airtype.core.audio_capture.AudioCaptureService", return_value=mocks["audio"]),
-        patch("airtype.core.vad.VadEngine", return_value=mocks["vad"]),
-        patch("airtype.core.asr_engine.ASREngineRegistry", return_value=mocks["registry"]),
-        patch("airtype.core.hotkey.FocusManager", return_value=mocks["focus_mgr"]),
-        patch("airtype.core.text_injector.TextInjector", return_value=mocks["injector"]),
-        patch("airtype.core.dictionary.DictionaryEngine", return_value=mocks["dict_engine"]),
-        patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=mocks["pipeline"]),
-        patch("airtype.core.controller.CoreController", return_value=mocks["ctrl"]) as mock_ctrl_cls,
-        patch("airtype.core.controller.init_controller"),
-        patch("airtype.core.hotkey.HotkeyManager", return_value=mocks["hkm"]),
-        patch("airtype.ui.overlay.CapsuleOverlay", return_value=mocks["overlay"]),
-        patch("airtype.ui.settings_window.SettingsWindow", return_value=mocks["sw"]),
-        patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mocks["tray"]),
-        patch("airtype.__main__.importlib"),                               # 阻止 ASR 動態 import
-        patch("sys.exit"),
-    ):
+    with ExitStack() as stack:
+        stack.enter_context(patch("airtype.config.AirtypeConfig.load", return_value=mocks["cfg"]))
+        stack.enter_context(patch("airtype.__main__.setup_logging"))
+        stack.enter_context(patch("airtype.__main__._acquire_instance_lock", return_value=MagicMock()))
+        stack.enter_context(patch("airtype.utils.i18n.set_language"))
+        stack.enter_context(patch("PySide6.QtWidgets.QApplication", return_value=mocks["app"]))
+        stack.enter_context(patch("PySide6.QtGui.QIcon"))
+        stack.enter_context(patch("PySide6.QtCore.QTimer"))
+        stack.enter_context(patch("airtype.core.audio_capture.AudioCaptureService", return_value=mocks["audio"]))
+        stack.enter_context(patch("airtype.core.vad.VadEngine", return_value=mocks["vad"]))
+        stack.enter_context(patch("airtype.core.asr_engine.ASREngineRegistry", return_value=mocks["registry"]))
+        stack.enter_context(patch("airtype.core.hotkey.FocusManager", return_value=mocks["focus_mgr"]))
+        stack.enter_context(patch("airtype.core.text_injector.TextInjector", return_value=mocks["injector"]))
+        stack.enter_context(patch("airtype.core.dictionary.DictionaryEngine", return_value=mocks["dict_engine"]))
+        stack.enter_context(patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=mocks["pipeline"]))
+        mock_ctrl_cls = stack.enter_context(
+            patch("airtype.core.controller.CoreController", return_value=mocks["ctrl"])
+        )
+        stack.enter_context(patch("airtype.core.controller.init_controller"))
+        stack.enter_context(patch("airtype.core.hotkey.HotkeyManager", return_value=mocks["hkm"]))
+        stack.enter_context(patch("airtype.ui.overlay.CapsuleOverlay", return_value=mocks["overlay"]))
+        stack.enter_context(patch("airtype.ui.settings_window.SettingsWindow", return_value=mocks["sw"]))
+        stack.enter_context(patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mocks["tray"]))
+        stack.enter_context(patch("airtype.__main__.importlib"))
+        stack.enter_context(patch("sys.exit"))
+
         from airtype.__main__ import main
         main()
     return mock_ctrl_cls

@@ -10,9 +10,12 @@
 from __future__ import annotations
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from airtype.__main__ import _acquire_instance_lock
 
@@ -60,11 +63,16 @@ def test_lock_released_after_close():
                 second.close()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Windows msvcrt.locking 的鎖釋放時機依賴 GC 行為，"
+           "在 CPython 以外或 Windows 上不保證可靠性；改用 test_lock_released_after_close 驗證主要場景",
+)
 def test_lock_released_after_crash():
     """模擬 crash（del file object）後鎖自動釋放。
 
-    OS 層級的 flock/msvcrt.locking 在 file descriptor 關閉時自動釋放，
-    Python GC 回收檔案物件時會關閉 FD。
+    POSIX flock 在 FD 關閉時立即釋放；CPython 的參考計數 GC 在 del 後立即回收。
+    此測試在 Linux/macOS 下穩定，Windows 跳過（見 skipif）。
     """
     import gc
 

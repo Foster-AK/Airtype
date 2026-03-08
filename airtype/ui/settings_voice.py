@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 from airtype.ui.device_selector import list_input_devices
+from airtype.utils.audio_utils import build_wasapi_extra_settings
 from airtype.utils.i18n import tr  # noqa: E402
 
 try:
@@ -65,21 +66,12 @@ if _PYSIDE6_AVAILABLE:
 
         def run(self) -> None:
             try:
-                import sys
-
                 import numpy as np
                 import sounddevice as sd
 
                 recorded: list = []
                 device_arg = None if self._device == "default" else self._device
-
-                # Windows WASAPI: 啟用 auto_convert 讓 OS 處理取樣率轉換
-                extra_settings = None
-                if sys.platform == "win32":
-                    try:
-                        extra_settings = sd.WasapiSettings(auto_convert=True)
-                    except Exception:
-                        pass
+                extra_settings = build_wasapi_extra_settings()
 
                 def _callback(indata, frames, time, status):
                     chunk = indata[:, 0]

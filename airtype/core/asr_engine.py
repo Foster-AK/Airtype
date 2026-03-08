@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Optional, Protocol, runtime_checkable
@@ -38,6 +39,31 @@ STREAMING_CAPABLE_ENGINES: frozenset[str] = frozenset({
 from airtype.utils.paths import get_manifest_path as _get_manifest_path
 
 _MANIFEST_PATH = _get_manifest_path()
+
+# ---------------------------------------------------------------------------
+# Manifest 快取（單進程生命週期內快取，避免重複讀取磁碟）
+# ---------------------------------------------------------------------------
+
+_manifest_cache: Optional[dict] = None
+_manifest_cache_lock = threading.Lock()
+
+
+def _get_manifest() -> dict:
+    """讀取並快取 manifest.json。
+
+    單進程內只讀取一次磁碟；manifest 在模型下載後需要重啟 app 才生效，
+    因此快取不會造成陳舊資料問題。
+    """
+    global _manifest_cache
+    with _manifest_cache_lock:
+        if _manifest_cache is None:
+            try:
+                with _MANIFEST_PATH.open(encoding="utf-8") as f:
+                    _manifest_cache = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                _manifest_cache = {}
+        return _manifest_cache
+
 
 # ---------------------------------------------------------------------------
 # 模型家族 → 引擎 ID 後備映射表（當 manifest 查詢失敗時使用）
@@ -222,6 +248,8 @@ class ASREngineRegistry:
 
     def __init__(self) -> None:
         self._factories: dict[str, Callable[[], ASREngine]] = {}
+        # _lock 保護 _active / _active_id 的多執行緒存取（RLock 允許同一執行緒重入）
+        self._lock = threading.RLock()
         self._active: Optional[ASREngine] = None
         self._active_id: Optional[str] = None
         # 閒置卸載監控（懶加載與按需模型管理，符合 PRD §10.1）
@@ -278,31 +306,32 @@ class ASREngineRegistry:
         # 先確認新引擎存在；若失敗則 KeyError 在此拋出，舊引擎不受影響
         new_engine = self.get_engine(engine_id)
 
-        # 停止舊引擎的閒置監控（切換時不再需要監控舊引擎）
-        if self._idle_unloader is not None:
-            self._idle_unloader.stop()
-            self._idle_unloader = None
+        with self._lock:
+            # 停止舊引擎的閒置監控（切換時不再需要監控舊引擎）
+            if self._idle_unloader is not None:
+                self._idle_unloader.stop()
+                self._idle_unloader = None
 
-        # 卸載目前引擎
-        if self._active is not None:
-            try:
-                self._active.unload()
-                logger.debug("已卸載 ASR 引擎：%s", self._active_id)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("卸載 ASR 引擎 %r 時發生錯誤：%s", self._active_id, exc)
+            # 卸載目前引擎
+            if self._active is not None:
+                try:
+                    self._active.unload()
+                    logger.debug("已卸載 ASR 引擎：%s", self._active_id)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("卸載 ASR 引擎 %r 時發生錯誤：%s", self._active_id, exc)
 
-        self._active = new_engine
-        self._active_id = engine_id
-        logger.info("已切換至 ASR 引擎：%s", engine_id)
+            self._active = new_engine
+            self._active_id = engine_id
+            logger.info("已切換至 ASR 引擎：%s", engine_id)
 
-        # 建立並啟動新引擎的閒置卸載監控（首次使用時由 notify_used() 啟動計時）
-        from airtype.utils.idle_unloader import IdleUnloader  # noqa: PLC0415
+            # 建立並啟動新引擎的閒置卸載監控（首次使用時由 notify_used() 啟動計時）
+            from airtype.utils.idle_unloader import IdleUnloader  # noqa: PLC0415
 
-        self._idle_unloader = IdleUnloader(
-            unload_fn=self._perform_idle_unload,
-            timeout_sec=self._idle_timeout_sec,
-        )
-        self._idle_unloader.start()
+            self._idle_unloader = IdleUnloader(
+                unload_fn=self._perform_idle_unload,
+                timeout_sec=self._idle_timeout_sec,
+            )
+            self._idle_unloader.start()
 
         if self.on_engine_changed is not None:
             self.on_engine_changed(engine_id)
@@ -314,12 +343,14 @@ class ASREngineRegistry:
     @property
     def active_engine(self) -> Optional[ASREngine]:
         """目前作用中的引擎實例，若無則為 None。"""
-        return self._active
+        with self._lock:
+            return self._active
 
     @property
     def active_engine_id(self) -> Optional[str]:
         """目前作用中的引擎 ID，若無則為 None。"""
-        return self._active_id
+        with self._lock:
+            return self._active_id
 
     @property
     def registered_ids(self) -> list[str]:
@@ -354,31 +385,33 @@ class ASREngineRegistry:
 
         應用程式關閉時呼叫，確保資源正確釋放。
         """
-        if self._idle_unloader is not None:
-            self._idle_unloader.stop()
-            self._idle_unloader = None
-        if self._active is not None:
-            try:
-                self._active.unload()
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("shutdown 時卸載 ASR 引擎失敗：%s", exc)
-            self._active = None
-            self._active_id = None
+        with self._lock:
+            if self._idle_unloader is not None:
+                self._idle_unloader.stop()
+                self._idle_unloader = None
+            if self._active is not None:
+                try:
+                    self._active.unload()
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("shutdown 時卸載 ASR 引擎失敗：%s", exc)
+                self._active = None
+                self._active_id = None
         logger.debug("ASREngineRegistry 已關閉")
 
     def _perform_idle_unload(self) -> None:
         """由 IdleUnloader 在閒置逾時後呼叫，卸載作用中引擎並清除引用。
 
-        執行於 IdleUnloader 的背景執行緒中。
+        執行於 IdleUnloader 的背景執行緒中；_lock 保護與主執行緒的競態。
         """
-        if self._active is not None:
-            try:
-                self._active.unload()
-                logger.info("閒置逾時卸載 ASR 引擎：%s，RAM 已釋放", self._active_id)
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("閒置卸載 ASR 引擎失敗（%s）：%s", self._active_id, exc)
-            self._active = None
-            self._active_id = None
+        with self._lock:
+            if self._active is not None:
+                try:
+                    self._active.unload()
+                    logger.info("閒置逾時卸載 ASR 引擎：%s，RAM 已釋放", self._active_id)
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("閒置卸載 ASR 引擎失敗（%s）：%s", self._active_id, exc)
+                self._active = None
+                self._active_id = None
 
     # ------------------------------------------------------------------
     # 啟動載入
@@ -386,18 +419,8 @@ class ASREngineRegistry:
 
     @staticmethod
     def _resolve_engine_from_manifest(model_id: str) -> Optional[str]:
-        """查詢 manifest 取得模型對應的引擎 ID。
-
-        讀取 models/manifest.json，找到 id == model_id 的條目，
-        取得其 inference_engine 欄位，再透過 _INFERENCE_ENGINE_ALIAS 轉換。
-        找不到時回傳 None。
-        """
-        try:
-            with _MANIFEST_PATH.open(encoding="utf-8") as f:
-                manifest = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return None
-
+        """查詢 manifest 取得模型對應的引擎 ID（使用快取）。"""
+        manifest = _get_manifest()
         for entry in manifest.get("models", []):
             if entry.get("id") == model_id:
                 engine = entry.get("inference_engine", "")
@@ -406,52 +429,25 @@ class ASREngineRegistry:
 
     @staticmethod
     def _resolve_model_path_from_manifest(model_id: str) -> Optional[str]:
-        """從 manifest 解析模型的本機存放路徑。
-
-        查詢 manifest 中 model_id 對應的 filename，組合為
-        ``~/.airtype/models/{filename}``（單檔）或
-        ``~/.airtype/models/{stem}/``（zip 解壓目錄）。
-
-        Returns:
-            模型路徑字串，若 manifest 中找不到則回傳 None。
-        """
-        try:
-            with _MANIFEST_PATH.open(encoding="utf-8") as f:
-                manifest = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return None
+        """從 manifest 解析模型的本機存放路徑（使用快取）。"""
+        manifest = _get_manifest()
+        models_dir = Path.home() / ".airtype" / "models"
         for entry in manifest.get("models", []):
             if entry.get("id") == model_id:
                 filename = entry.get("filename", "")
                 if not filename:
                     return None
-                models_dir = Path.home() / ".airtype" / "models"
-                # zip 類模型解壓為目錄（去掉 .zip 副檔名）
-                if filename.endswith(".zip"):
-                    return str(models_dir / Path(filename).stem)
-                return str(models_dir / filename)
+                return str(models_dir / Path(filename).stem) if filename.endswith(".zip") \
+                    else str(models_dir / filename)
         return None
 
     @staticmethod
     def _resolve_model_path_by_engine(
         family_prefix: str, engine_id: str,
     ) -> Optional[str]:
-        """以家族名稱前綴 + 引擎 ID 從 manifest 搜尋模型路徑（後備策略）。
-
-        當 config 中的 asr_model 為家族名（如 "qwen3-asr-0.6b"）而非
-        manifest 中的完整 ID（如 "qwen3-asr-0.6b-openvino"）時使用。
-
-        搜尋條件：manifest 條目 ID 以 family_prefix 開頭，且其
-        inference_engine（經 alias 轉換後）等於 engine_id。
-
-        Returns:
-            模型路徑字串，若找不到則回傳 None。
-        """
-        try:
-            with _MANIFEST_PATH.open(encoding="utf-8") as f:
-                manifest = json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError):
-            return None
+        """以家族名稱前綴 + 引擎 ID 從 manifest 搜尋模型路徑（後備策略，使用快取）。"""
+        manifest = _get_manifest()
+        models_dir = Path.home() / ".airtype" / "models"
         for entry in manifest.get("models", []):
             entry_id = entry.get("id", "")
             if not entry_id.startswith(family_prefix):
@@ -462,10 +458,8 @@ class ASREngineRegistry:
                 filename = entry.get("filename", "")
                 if not filename:
                     continue
-                models_dir = Path.home() / ".airtype" / "models"
-                if filename.endswith(".zip"):
-                    return str(models_dir / Path(filename).stem)
-                return str(models_dir / filename)
+                return str(models_dir / Path(filename).stem) if filename.endswith(".zip") \
+                    else str(models_dir / filename)
         return None
 
     def _prepare_active_engine(self, model_id: str) -> None:
@@ -498,44 +492,20 @@ class ASREngineRegistry:
                 model_id,
             )
 
-    def load_default_engine(self, config) -> None:
-        """依設定的 voice.asr_model + voice.asr_inference_backend 載入預設引擎。
+    def _resolve_engine_id(self, model_id: str, backend: str) -> Optional[str]:
+        """將 model_id + backend 解析為已登錄的引擎 ID。
 
-        解析策略：
-        1. 直接匹配：若 model_id 為已登錄的引擎 ID，直接使用
-        2. Manifest 解析：查詢 manifest 的 inference_engine 欄位，
-           確定該模型需要的引擎 ID
-        3. 家族映射後備：若 model_id 在 _MODEL_ENGINE_MAP 中，依 backend 選擇引擎
-           - auto：遍歷候選清單，選第一個已登錄的引擎
-           - 特定值：篩選包含 backend 子字串的引擎 ID
-        4. 失敗：記錄 WARNING 並保持無作用中引擎
-
-        Args:
-            config: AirtypeConfig 實例。
+        解析順序：直接匹配 → Manifest → 家族映射。
+        找不到時回傳 None。
         """
-        model_id: str = config.voice.asr_model
-        backend: str = config.voice.asr_inference_backend
-
         # 階段 1：直接匹配引擎 ID
         if model_id in self._factories:
-            try:
-                self.set_active_engine(model_id)
-                self._prepare_active_engine(model_id)
-                logger.debug("load_default_engine 直接匹配：%s", model_id)
-                return
-            except KeyError:
-                pass
+            return model_id
 
-        # 階段 2：Manifest 解析——根據模型條目的 inference_engine 決定引擎
+        # 階段 2：Manifest 解析
         manifest_engine = self._resolve_engine_from_manifest(model_id)
         if manifest_engine and manifest_engine in self._factories:
-            self.set_active_engine(manifest_engine)
-            self._prepare_active_engine(model_id)
-            logger.debug(
-                "load_default_engine manifest 解析：%s → %s",
-                model_id, manifest_engine,
-            )
-            return
+            return manifest_engine
 
         # 階段 3：家族映射後備
         candidates = _MODEL_ENGINE_MAP.get(model_id)
@@ -543,26 +513,33 @@ class ASREngineRegistry:
             if backend == "auto":
                 for engine_id in candidates:
                     if engine_id in self._factories:
-                        self.set_active_engine(engine_id)
-                        self._prepare_active_engine(model_id)
-                        logger.debug(
-                            "load_default_engine 家族映射（auto）：%s → %s",
-                            model_id, engine_id,
-                        )
-                        return
+                        return engine_id
             else:
                 for engine_id in candidates:
                     if backend in engine_id and engine_id in self._factories:
-                        self.set_active_engine(engine_id)
-                        self._prepare_active_engine(model_id)
-                        logger.debug(
-                            "load_default_engine 家族映射（%s）：%s → %s",
-                            backend, model_id, engine_id,
-                        )
-                        return
+                        return engine_id
 
-        # 階段 4：失敗
-        logger.warning(
-            "設定指定的 ASR 模型 %r（backend=%r）無法解析為已登錄引擎，保持無作用中引擎",
-            model_id, backend,
-        )
+        return None
+
+    def load_default_engine(self, config) -> None:
+        """依設定的 voice.asr_model + voice.asr_inference_backend 載入預設引擎。
+
+        解析策略：直接匹配 → Manifest 解析 → 家族映射後備 → 失敗 WARNING。
+
+        Args:
+            config: AirtypeConfig 實例。
+        """
+        model_id: str = config.voice.asr_model
+        backend: str = config.voice.asr_inference_backend
+
+        engine_id = self._resolve_engine_id(model_id, backend)
+        if engine_id is None:
+            logger.warning(
+                "設定指定的 ASR 模型 %r（backend=%r）無法解析為已登錄引擎，保持無作用中引擎",
+                model_id, backend,
+            )
+            return
+
+        self.set_active_engine(engine_id)
+        self._prepare_active_engine(model_id)
+        logger.debug("load_default_engine：%s → %s", model_id, engine_id)

@@ -11,12 +11,13 @@ venv/
 env/
 
 # Build / Distribution
-build/
 build_tmp/
+build_venv/
 dist/
 
-# PyInstaller
-*.spec
+# PyInstaller（airtype.spec 已追蹤，不排除）
+# build/ 目錄下的建置腳本已追蹤，但排除 PyInstaller 產物
+build/__pycache__/
 
 # chatllm binaries (DLL / EXE / LIB)
 chatllm/bin/*.dll

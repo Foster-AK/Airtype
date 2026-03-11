@@ -39,6 +39,10 @@ full = [
     "llama-cpp-python>=0.2.90",
     "httpx>=0.27",
 ]
+packaging = [
+    "tokenizers>=0.15",
+    "pyinstaller>=6.0",
+]
 dev = [
     "pytest>=8.0",
     "pytest-benchmark>=4.0",

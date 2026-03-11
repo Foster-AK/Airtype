@@ -1,17 +1,24 @@
 """Qwen3-ASR ONNX Runtime 引擎。
 
-使用 onnxruntime.InferenceSession 載入 ONNX 模型（3-part 架構），
+使用 onnxruntime.InferenceSession 載入社群 ONNX 模型（4-part 架構），
 在 CPU 上執行批次語音辨識，全平台通用（Windows、macOS、Linux）。
 
-推理流程（對齊官方 qwen-asr 套件）：
-  1. Qwen3ASRProcessor 建構 chat prompt 並提取 Mel 頻譜
-  2. audio_encoder 將 Mel → audio_hidden
-  3. thinker_embeddings 將 token IDs → text_embeddings
-  4. 替換 <|audio_pad|> 位置為 audio_hidden
-  5. decoder 自回歸解碼（顯式 KV cache I/O）
-  6. parse_asr_output 解析輸出
+模型結構（對齊 andrewleech/qwen3-asr-onnx 社群匯出）：
+  - encoder.onnx / encoder.int8.onnx — 輸入 mel [1,128,T]，輸出 audio_features
+  - embed_tokens.bin — 純 numpy 嵌入矩陣 [vocab_size, hidden_dim]
+  - decoder_init.onnx / decoder_init.int8.onnx — prefill，輸出 logits + present KV
+  - decoder_step.onnx / decoder_step.int8.onnx — 自回歸步驟，接收 past KV
 
-參考：https://github.com/QwenLM/Qwen3-ASR
+推理流程：
+  1. Processor 建構 chat prompt 並提取 Mel 頻譜
+  2. encoder 將 Mel → audio_features
+  3. embed_tokens numpy 查表取得 text_embeddings
+  4. 替換 <|audio_pad|> 位置為 audio_features
+  5. decoder_init prefill → logits + present KV
+  6. decoder_step 自回歸解碼（顯式 KV cache I/O）
+  7. parse_asr_output 解析輸出
+
+參考：https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx
 符合 PRD §6.3.2（Qwen3-ASR 整合）。
 """
 from __future__ import annotations
@@ -32,9 +39,14 @@ from airtype.core.asr_engine import (
 
 logger = logging.getLogger(__name__)
 
-# Qwen3-ASR 特殊 token ID（從 tokenizer_config.json）
+# Qwen3-ASR 特殊 token ID（從 tokenizer_config.json / prompt.py）
+_ENDOFTEXT_ID = 151643
 _IM_END_ID = 151645
+_AUDIO_START_ID = 151669
+_AUDIO_END_ID = 151670
 _AUDIO_PAD_ID = 151676
+_ASR_TEXT_ID = 151704
+_EOS_IDS = frozenset({_ENDOFTEXT_ID, _IM_END_ID})
 
 # 解碼上限
 _MAX_DECODE_STEPS = 448
@@ -241,9 +253,10 @@ def _build_numpy_processor(model_dir: Path):
 
 
 class QwenOnnxEngine:
-    """Qwen3-ASR ONNX Runtime 引擎（3-part 架構，顯式 KV cache）。
+    """Qwen3-ASR ONNX Runtime 引擎（4-part 架構，顯式 KV cache）。
 
-    使用 onnxruntime.InferenceSession 做推理，全平台通用。
+    使用社群 ONNX 匯出模型（andrewleech/qwen3-asr-onnx）做推理，全平台通用。
+    模型包含 encoder.onnx、embed_tokens.bin、decoder_init.onnx、decoder_step.onnx。
 
     典型用法::
 
@@ -261,16 +274,15 @@ class QwenOnnxEngine:
         self._loaded: bool = False
 
         # ONNX Runtime sessions
-        self._enc_session = None  # audio_encoder
-        self._emb_session = None  # thinker_embeddings
-        self._dec_session = None  # decoder
+        self._enc_session = None   # encoder.onnx
+        self._dec_init_session = None  # decoder_init.onnx（prefill）
+        self._dec_step_session = None  # decoder_step.onnx（自回歸）
+
+        # 嵌入矩陣（純 numpy，從 embed_tokens.bin 載入）
+        self._embed_tokens: np.ndarray | None = None  # [vocab_size, hidden_dim]
 
         # Processor（tokenizer + feature_extractor）
         self._processor = None
-
-        # KV cache 元資訊（從 decoder 模型輸入推導）
-        self._kv_input_names: list[str] = []
-        self._kv_output_names: list[str] = []
 
         # 上下文偏移
         self._hot_words: list[HotWord] = []
@@ -281,7 +293,16 @@ class QwenOnnxEngine:
     # ------------------------------------------------------------------
 
     def load_model(self, model_path: str, config: dict[str, Any] | None = None) -> None:
-        """載入 3-part ONNX 模型與 Processor。"""
+        """載入 4-part ONNX 模型與 Processor。
+
+        模型檔案結構（社群 andrewleech/qwen3-asr-onnx 匯出）：
+          - encoder.onnx 或 encoder.int8.onnx
+          - embed_tokens.bin + config.json（嵌入矩陣形狀）
+          - decoder_init.onnx 或 decoder_init.int8.onnx
+          - decoder_step.onnx 或 decoder_step.int8.onnx
+        """
+        import json as _json
+
         import onnxruntime as ort
 
         model_dir = Path(model_path)
@@ -291,10 +312,27 @@ class QwenOnnxEngine:
                 "請至設定頁面下載 ONNX 模型。"
             )
 
-        # 驗證必要檔案
-        for fname in ("audio_encoder_model.onnx", "decoder_model.onnx"):
-            if not (model_dir / fname).exists():
-                raise FileNotFoundError(f"缺少必要模型檔案：{model_dir / fname}")
+        # 偵測 INT8 或 FP32 變體
+        def _find_onnx(base_name: str) -> Path:
+            """優先載入 INT8 版本，fallback FP32。"""
+            int8 = model_dir / f"{base_name}.int8.onnx"
+            fp32 = model_dir / f"{base_name}.onnx"
+            if int8.exists():
+                return int8
+            if fp32.exists():
+                return fp32
+            raise FileNotFoundError(
+                f"缺少必要模型檔案：{fp32} 或 {int8}"
+            )
+
+        encoder_path = _find_onnx("encoder")
+        dec_init_path = _find_onnx("decoder_init")
+        dec_step_path = _find_onnx("decoder_step")
+
+        # 驗證 embed_tokens.bin
+        embed_bin_path = model_dir / "embed_tokens.bin"
+        if not embed_bin_path.exists():
+            raise FileNotFoundError(f"缺少嵌入矩陣檔案：{embed_bin_path}")
 
         config = config or {}
 
@@ -305,33 +343,43 @@ class QwenOnnxEngine:
             providers.append("CoreMLExecutionProvider")
         providers.append("CPUExecutionProvider")
 
-        # 載入 3 個子模型
-        logger.debug("載入 audio_encoder_model.onnx...")
+        # 載入 encoder
+        logger.debug("載入 %s...", encoder_path.name)
         self._enc_session = ort.InferenceSession(
-            str(model_dir / "audio_encoder_model.onnx"), providers=providers,
+            str(encoder_path), providers=providers,
         )
 
-        emb_path = model_dir / "thinker_embeddings_model.onnx"
-        if emb_path.exists():
-            logger.debug("載入 thinker_embeddings_model.onnx...")
-            self._emb_session = ort.InferenceSession(
-                str(emb_path), providers=providers,
-            )
+        # 載入 embed_tokens（純 numpy 嵌入矩陣）
+        config_path = model_dir / "config.json"
+        if config_path.exists():
+            with config_path.open("r", encoding="utf-8") as f:
+                model_config = _json.load(f)
+            embed_shape = model_config.get("embed_tokens_shape")
+        else:
+            embed_shape = None
 
-        logger.debug("載入 decoder_model.onnx...")
-        self._dec_session = ort.InferenceSession(
-            str(model_dir / "decoder_model.onnx"), providers=providers,
+        logger.debug("載入 embed_tokens.bin...")
+        raw_embed = np.fromfile(str(embed_bin_path), dtype=np.float32)
+        if embed_shape:
+            self._embed_tokens = raw_embed.reshape(embed_shape)
+        else:
+            # fallback：假設 Qwen3-ASR 0.6B 的 vocab=151936, hidden=1024
+            vocab_size = 151936
+            hidden_dim = len(raw_embed) // vocab_size
+            self._embed_tokens = raw_embed.reshape(vocab_size, hidden_dim)
+        logger.debug("embed_tokens shape=%s", self._embed_tokens.shape)
+
+        # 載入 decoder_init（prefill）
+        logger.debug("載入 %s...", dec_init_path.name)
+        self._dec_init_session = ort.InferenceSession(
+            str(dec_init_path), providers=providers,
         )
 
-        # 探查 decoder 的 KV cache 輸入/輸出名稱
-        self._kv_input_names = [
-            inp.name for inp in self._dec_session.get_inputs()
-            if inp.name.startswith("past_key_values")
-        ]
-        self._kv_output_names = [
-            out.name for out in self._dec_session.get_outputs()
-            if out.name.startswith("present")
-        ]
+        # 載入 decoder_step（自回歸）
+        logger.debug("載入 %s...", dec_step_path.name)
+        self._dec_step_session = ort.InferenceSession(
+            str(dec_step_path), providers=providers,
+        )
 
         # 載入 Processor
         self._processor = self._load_processor(model_dir)
@@ -340,8 +388,8 @@ class QwenOnnxEngine:
         self._config = config
         self._loaded = True
         logger.info(
-            "QwenOnnxEngine 已就緒（providers=%s, kv_pairs=%d）",
-            providers, len(self._kv_input_names),
+            "QwenOnnxEngine 已就緒（providers=%s, embed=%s）",
+            providers, self._embed_tokens.shape,
         )
 
     def recognize(self, audio: np.ndarray) -> ASRResult:
@@ -378,11 +426,10 @@ class QwenOnnxEngine:
 
     def unload(self) -> None:
         self._enc_session = None
-        self._emb_session = None
-        self._dec_session = None
+        self._dec_init_session = None
+        self._dec_step_session = None
+        self._embed_tokens = None
         self._processor = None
-        self._kv_input_names = []
-        self._kv_output_names = []
         self._loaded = False
         logger.info("QwenOnnxEngine 已卸載")
 
@@ -549,9 +596,11 @@ class QwenOnnxEngine:
                 mel_features, ((0, 0), (0, pad_len)), mode="constant",
             )
         mel_batch = mel_features[np.newaxis, :, :].astype(np.float32)
-        [audio_hidden] = self._enc_session.run(None, {"mel": mel_batch})
-        n_audio_tokens = audio_hidden.shape[1]
-        logger.debug("Audio encoder: shape=%s", audio_hidden.shape)
+        [audio_features] = self._enc_session.run(
+            ["audio_features"], {"mel": mel_batch},
+        )
+        n_audio_tokens = audio_features.shape[1]
+        logger.debug("Audio encoder: shape=%s", audio_features.shape)
 
         # 3. 建構 prompt 並取得 input_ids
         prompt_text = self._build_text_prompt(self._context_text)
@@ -565,22 +614,23 @@ class QwenOnnxEngine:
         )
         input_ids = self._processor.tokenizer.encode(expanded_prompt, add_special_tokens=False)
 
-        # 4. Thinker embeddings
-        if self._emb_session is None:
-            raise RuntimeError("thinker_embeddings 模型未載入")
-        ids_np = np.array([input_ids], dtype=np.int64)
-        [text_embeddings] = self._emb_session.run(None, {"input_ids": ids_np})
+        # 4. embed_tokens 查表（純 numpy，不需 ONNX session）
+        if self._embed_tokens is None:
+            raise RuntimeError("embed_tokens 嵌入矩陣未載入")
+        ids_np = np.array(input_ids, dtype=np.int64)
+        text_embeddings = self._embed_tokens[ids_np]  # (seq_len, hidden_dim)
+        text_embeddings = text_embeddings[np.newaxis, :, :]  # (1, seq_len, hidden_dim)
 
-        # 5. 替換 <|audio_pad|> 位置為 audio_hidden
+        # 5. 替換 <|audio_pad|> 位置為 audio_features
         combined = text_embeddings.copy()
         audio_pad_positions = [i for i, tid in enumerate(input_ids) if tid == _AUDIO_PAD_ID]
 
         if len(audio_pad_positions) == n_audio_tokens:
             for idx, pos in enumerate(audio_pad_positions):
-                combined[0, pos, :] = audio_hidden[0, idx, :]
+                combined[0, pos, :] = audio_features[0, idx, :]
         else:
             logger.warning(
-                "audio_pad 數量 (%d) 與 audio_hidden (%d) 不符",
+                "audio_pad 數量 (%d) 與 audio_features (%d) 不符",
                 len(audio_pad_positions), n_audio_tokens,
             )
 
@@ -604,31 +654,25 @@ class QwenOnnxEngine:
         self,
         initial_embeddings: np.ndarray,
     ) -> tuple[list[int], float]:
-        """Greedy decoding（顯式 KV cache I/O）。
+        """Greedy decoding（decoder_init + decoder_step，顯式 KV cache）。
 
         流程：
-        1. 初始化空的 past_key_values tensors
-        2. Prefill：一次送入所有嵌入，取得 present KV
-        3. Decode：每步送一個新 token 嵌入 + 上一步的 present KV
+        1. decoder_init：送入所有嵌入做 prefill，取得 logits + present KV
+        2. decoder_step：每步送一個新 token 嵌入 + past KV，取得 logits + present KV
         """
         seq_len = initial_embeddings.shape[1]
         generated: list[int] = []
         log_probs: list[float] = []
 
-        # 建構初始 KV cache（空的）
-        kv_cache = self._build_empty_kv_cache()
-
-        # Prefill
+        # Prefill（decoder_init）
         position_ids = np.arange(seq_len, dtype=np.int64).reshape(1, -1)
-        dec_inputs = {
-            "input_embeds": initial_embeddings,
-            "position_ids": position_ids,
-        }
-        dec_inputs.update(kv_cache)
-
-        dec_outputs = self._dec_session.run(None, dec_inputs)
-        logits = dec_outputs[0]
-        kv_cache = self._extract_kv_cache(dec_outputs)
+        logits, present_keys, present_values = self._dec_init_session.run(
+            ["logits", "present_keys", "present_values"],
+            {
+                "input_embeds": initial_embeddings.astype(np.float32),
+                "position_ids": position_ids,
+            },
+        )
 
         last_logits = (
             logits[0, -1, :].astype(np.float64)
@@ -637,9 +681,9 @@ class QwenOnnxEngine:
         next_token = int(np.argmax(last_logits))
         current_pos = seq_len
 
-        # Autoregressive decode
+        # Autoregressive decode（decoder_step）
         for _ in range(_MAX_DECODE_STEPS):
-            if next_token == _IM_END_ID:
+            if next_token in _EOS_IDS:
                 break
 
             generated.append(next_token)
@@ -649,21 +693,21 @@ class QwenOnnxEngine:
             log_prob = float(shifted[next_token] - np.log(np.sum(np.exp(shifted))))
             log_probs.append(log_prob)
 
-            # 新 token 嵌入
-            new_token_np = np.array([[next_token]], dtype=np.int64)
-            [new_emb] = self._emb_session.run(None, {"input_ids": new_token_np})
+            # 新 token 嵌入（numpy 查表）
+            token_embed = self._embed_tokens[next_token]  # (hidden_dim,)
+            token_embed = token_embed[np.newaxis, np.newaxis, :]  # (1, 1, hidden_dim)
 
-            # 單步 decode（顯式 KV cache）
-            pos_ids = np.array([[current_pos]], dtype=np.int64)
-            dec_inputs = {
-                "input_embeds": new_emb,
-                "position_ids": pos_ids,
-            }
-            dec_inputs.update(kv_cache)
-
-            dec_outputs = self._dec_session.run(None, dec_inputs)
-            logits = dec_outputs[0]
-            kv_cache = self._extract_kv_cache(dec_outputs)
+            # 單步 decode
+            step_pos = np.array([[current_pos]], dtype=np.int64)
+            logits, present_keys, present_values = self._dec_step_session.run(
+                ["logits", "present_keys", "present_values"],
+                {
+                    "input_embeds": token_embed.astype(np.float32),
+                    "position_ids": step_pos,
+                    "past_keys": present_keys,
+                    "past_values": present_values,
+                },
+            )
             current_pos += 1
 
             last_logits = (
@@ -677,33 +721,6 @@ class QwenOnnxEngine:
             if log_probs else 0.0
         )
         return generated, confidence
-
-    def _build_empty_kv_cache(self) -> dict[str, np.ndarray]:
-        """建構空的 KV cache tensors（形狀從 decoder 模型輸入推導）。"""
-        kv = {}
-        for inp in self._dec_session.get_inputs():
-            if inp.name.startswith("past_key_values"):
-                # 動態軸為 seq_len（通常是最後一維或倒數第二維），設為 0
-                shape = []
-                for dim in inp.shape:
-                    if isinstance(dim, int):
-                        shape.append(dim)
-                    else:
-                        # 動態維度（字串如 "past_sequence_length"），設為 0
-                        shape.append(0)
-                kv[inp.name] = np.zeros(shape, dtype=np.float32)
-        return kv
-
-    def _extract_kv_cache(self, dec_outputs: list) -> dict[str, np.ndarray]:
-        """從 decoder 輸出中提取 present KV cache，映射為下一步的 past KV 輸入。"""
-        output_names = [out.name for out in self._dec_session.get_outputs()]
-        kv = {}
-        for i, name in enumerate(output_names):
-            if name.startswith("present"):
-                # present.0.key → past_key_values.0.key
-                past_name = name.replace("present", "past_key_values", 1)
-                kv[past_name] = dec_outputs[i]
-        return kv
 
     @staticmethod
     def _parse_output(raw: str) -> tuple[str, str]:

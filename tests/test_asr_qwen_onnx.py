@@ -2,9 +2,16 @@
 
 使用 mock onnxruntime 的單元測試（載入、推理流程、延遲載入）。
 整合測試（載入真實 ONNX 模型，模型不可用時跳過）。
+
+模型結構（社群 andrewleech/qwen3-asr-onnx 匯出）：
+  - encoder.onnx / encoder.int8.onnx
+  - embed_tokens.bin + config.json
+  - decoder_init.onnx / decoder_init.int8.onnx
+  - decoder_step.onnx / decoder_step.int8.onnx
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -18,8 +25,23 @@ import pytest
 _ONNX_MODEL_DIR = Path("models/asr/qwen3_asr_onnx_int8")
 _HAS_REAL_MODEL = _ONNX_MODEL_DIR.exists() and any(_ONNX_MODEL_DIR.glob("*.onnx"))
 
+# ── 常數 ──────────────────────────────────────────────────────────────────────
+
+_VOCAB_SIZE = 152000  # 需大於 EOS token ID 151645
+_HIDDEN_DIM = 512
+_NUM_LAYERS = 2
+_KV_HEADS = 4
+_HEAD_DIM = 64
+
 
 # ── Mock 工廠 ─────────────────────────────────────────────────────────────────
+
+
+def _logits(winning_token: int) -> np.ndarray:
+    """建立一個 logits 陣列，讓指定 token 獲勝。"""
+    arr = np.zeros((1, 1, _VOCAB_SIZE), dtype=np.float32)
+    arr[0, 0, winning_token] = 10.0
+    return arr
 
 
 def _make_mock_ort(*, decoder_tokens: int = 0) -> MagicMock:
@@ -34,59 +56,49 @@ def _make_mock_ort(*, decoder_tokens: int = 0) -> MagicMock:
     mock_ort = MagicMock()
 
     # ── encoder session ──
-    enc_output = np.random.rand(1, 10, 512).astype(np.float32)
+    # 輸出 audio_features [1, n_audio_tokens, hidden_dim]
+    enc_output = np.random.rand(1, 10, _HIDDEN_DIM).astype(np.float32)
     mock_enc_session = MagicMock()
     mock_enc_session.run.return_value = [enc_output]
-    mock_enc_session.get_inputs.return_value = []
-    mock_enc_session.get_outputs.return_value = []
 
-    # ── embeddings session ──
-    emb_output = np.random.rand(1, 20, 512).astype(np.float32)
-    mock_emb_session = MagicMock()
-    mock_emb_session.run.return_value = [emb_output]
-    mock_emb_session.get_inputs.return_value = []
-    mock_emb_session.get_outputs.return_value = []
-
-    # ── decoder session ──
-    _VOCAB_SIZE = 152000  # 需大於 EOS token ID 151645
-
-    def _logits(winning_token: int) -> np.ndarray:
-        arr = np.zeros((1, 1, _VOCAB_SIZE), dtype=np.float32)
-        arr[0, 0, winning_token] = 10.0
-        return arr
-
-    # EOS token ID = 151645
+    # ── decoder_init session（prefill）──
+    # 輸出：logits, present_keys, present_values
     eos_logits = _logits(151645)
-    non_eos_outputs = [[_logits(100 + i)] for i in range(decoder_tokens)]
-    eos_output = [eos_logits]
+    present_keys = np.zeros((_NUM_LAYERS, 1, _KV_HEADS, 10, _HEAD_DIM), dtype=np.float32)
+    present_values = np.zeros((_NUM_LAYERS, 1, _KV_HEADS, 10, _HEAD_DIM), dtype=np.float32)
 
-    mock_dec_session = MagicMock()
-    # decoder 沒有 KV cache 輸入（簡化 mock）
-    mock_dec_session.get_inputs.return_value = [
-        MagicMock(name="input_embeds", shape=[1, "seq", 512]),
-        MagicMock(name="position_ids", shape=[1, "seq"]),
-    ]
-    mock_dec_session.get_outputs.return_value = [
-        MagicMock(name="logits"),
-    ]
+    mock_dec_init_session = MagicMock()
 
     if decoder_tokens == 0:
-        mock_dec_session.run.return_value = eos_output
+        mock_dec_init_session.run.return_value = [eos_logits, present_keys, present_values]
     else:
-        _call_idx = [0]
+        # prefill 回傳第一個非 EOS token
+        init_logits = _logits(100)
+        mock_dec_init_session.run.return_value = [init_logits, present_keys, present_values]
 
-        def _run(*args, **kwargs):
-            idx = _call_idx[0]
-            _call_idx[0] += 1
-            if idx < len(non_eos_outputs):
-                return non_eos_outputs[idx]
-            return eos_output
+    # ── decoder_step session（自回歸）──
+    mock_dec_step_session = MagicMock()
 
-        mock_dec_session.run.side_effect = _run
+    if decoder_tokens > 0:
+        _step_idx = [0]
+
+        def _step_run(*args, **kwargs):
+            idx = _step_idx[0]
+            _step_idx[0] += 1
+            pk = np.zeros((_NUM_LAYERS, 1, _KV_HEADS, 10 + idx + 1, _HEAD_DIM), dtype=np.float32)
+            pv = np.zeros((_NUM_LAYERS, 1, _KV_HEADS, 10 + idx + 1, _HEAD_DIM), dtype=np.float32)
+            if idx < decoder_tokens - 1:
+                return [_logits(101 + idx), pk, pv]
+            return [eos_logits, pk, pv]
+
+        mock_dec_step_session.run.side_effect = _step_run
+    else:
+        mock_dec_step_session.run.return_value = [eos_logits, present_keys, present_values]
 
     # ── InferenceSession factory ──
+    # load_model 按順序建立：encoder, decoder_init, decoder_step
     _session_idx = [0]
-    sessions = [mock_enc_session, mock_emb_session, mock_dec_session]
+    sessions = [mock_enc_session, mock_dec_init_session, mock_dec_step_session]
 
     def _make_session(*args, **kwargs):
         idx = min(_session_idx[0], len(sessions) - 1)
@@ -97,6 +109,15 @@ def _make_mock_ort(*, decoder_tokens: int = 0) -> MagicMock:
     mock_ort.get_available_providers.return_value = ["CPUExecutionProvider"]
 
     return mock_ort
+
+
+def _create_embed_tokens_bin(model_dir: Path) -> None:
+    """在模型目錄中建立 embed_tokens.bin 和 config.json。"""
+    embed = np.random.rand(_VOCAB_SIZE, _HIDDEN_DIM).astype(np.float32)
+    embed.tofile(str(model_dir / "embed_tokens.bin"))
+    config = {"embed_tokens_shape": [_VOCAB_SIZE, _HIDDEN_DIM]}
+    with (model_dir / "config.json").open("w") as f:
+        json.dump(config, f)
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -111,20 +132,34 @@ def engine():
 
 @pytest.fixture
 def model_dir(tmp_path):
-    """建立含假 ONNX 檔案的臨時模型目錄。"""
+    """建立含假 ONNX 檔案和 embed_tokens 的臨時模型目錄。"""
     for name in (
-        "audio_encoder_model.onnx",
-        "thinker_embeddings_model.onnx",
-        "decoder_model.onnx",
+        "encoder.onnx",
+        "decoder_init.onnx",
+        "decoder_step.onnx",
     ):
         (tmp_path / name).write_bytes(b"<placeholder>")
+    _create_embed_tokens_bin(tmp_path)
+    return tmp_path
+
+
+@pytest.fixture
+def model_dir_int8(tmp_path):
+    """建立含 INT8 變體 ONNX 檔案的臨時模型目錄。"""
+    for name in (
+        "encoder.int8.onnx",
+        "decoder_init.int8.onnx",
+        "decoder_step.int8.onnx",
+    ):
+        (tmp_path / name).write_bytes(b"<placeholder>")
+    _create_embed_tokens_bin(tmp_path)
     return tmp_path
 
 
 @pytest.fixture
 def encoder_only_dir(tmp_path):
     """僅含 encoder ONNX 的目錄（無 decoder）。"""
-    (tmp_path / "audio_encoder_model.onnx").write_bytes(b"<placeholder>")
+    (tmp_path / "encoder.onnx").write_bytes(b"<placeholder>")
     return tmp_path
 
 
@@ -169,8 +204,31 @@ class TestModelLoading:
             with patch.object(type(engine), "_load_processor", return_value=MagicMock()):
                 engine.load_model(str(model_dir), {})
         assert engine._enc_session is not None
-        assert engine._emb_session is not None
-        assert engine._dec_session is not None
+        assert engine._dec_init_session is not None
+        assert engine._dec_step_session is not None
+
+    def test_load_model_loads_embed_tokens(self, engine, model_dir):
+        mock_ort = _make_mock_ort()
+        with patch.dict(sys.modules, {"onnxruntime": mock_ort}):
+            with patch.object(type(engine), "_load_processor", return_value=MagicMock()):
+                engine.load_model(str(model_dir), {})
+        assert engine._embed_tokens is not None
+        assert engine._embed_tokens.shape == (_VOCAB_SIZE, _HIDDEN_DIM)
+
+    def test_load_model_prefers_int8(self, engine, model_dir_int8):
+        """INT8 變體優先於 FP32。"""
+        mock_ort = _make_mock_ort()
+        with patch.dict(sys.modules, {"onnxruntime": mock_ort}):
+            with patch.object(type(engine), "_load_processor", return_value=MagicMock()):
+                engine.load_model(str(model_dir_int8), {})
+        assert engine._loaded
+
+    def test_load_missing_embed_tokens_raises(self, engine, tmp_path):
+        """缺少 embed_tokens.bin 應拋出 FileNotFoundError。"""
+        for name in ("encoder.onnx", "decoder_init.onnx", "decoder_step.onnx"):
+            (tmp_path / name).write_bytes(b"<placeholder>")
+        with pytest.raises(FileNotFoundError, match="embed_tokens"):
+            engine.load_model(str(tmp_path), {})
 
 
 # ── 延遲載入 ──────────────────────────────────────────────────────────────────
@@ -198,7 +256,6 @@ class TestBatchRecognition:
     def _recognize_with_mock(self, engine, model_dir, audio):
         mock_ort = _make_mock_ort()
         with patch.dict(sys.modules, {"onnxruntime": mock_ort}):
-            # mock processor
             with patch.object(type(engine), "_load_processor") as mock_proc:
                 proc = MagicMock()
                 proc.feature_extractor.return_value = {
@@ -280,8 +337,9 @@ class TestUnload:
                 engine.load_model(str(model_dir), {})
         engine.unload()
         assert engine._enc_session is None
-        assert engine._emb_session is None
-        assert engine._dec_session is None
+        assert engine._dec_init_session is None
+        assert engine._dec_step_session is None
+        assert engine._embed_tokens is None
 
 
 # ── 其他 Protocol 方法 ──────────────────────────────────────────────────────

@@ -100,7 +100,7 @@ class QwenPyTorchEngine:
         if not torch.cuda.is_available():
             raise RuntimeError(
                 "CUDA 不可用。QwenPyTorchEngine 需要 NVIDIA GPU 支援。"
-                "請改用 qwen3-openvino 引擎（CPU 路徑）。"
+                "請改用 qwen3-onnx 引擎（CPU 路徑）。"
             )
 
         config = config or {}

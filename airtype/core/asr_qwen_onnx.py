@@ -1,18 +1,18 @@
-"""Qwen3-ASR OpenVINO INT8 引擎。
+"""Qwen3-ASR ONNX Runtime 引擎。
 
-使用 openvino.Core 載入 INT8 量化 OpenVINO IR 模型（3-part stateful 架構），
-在 CPU 上執行批次語音辨識。
+使用 onnxruntime.InferenceSession 載入 ONNX 模型（3-part 架構），
+在 CPU 上執行批次語音辨識，全平台通用（Windows、macOS、Linux）。
 
 推理流程（對齊官方 qwen-asr 套件）：
   1. Qwen3ASRProcessor 建構 chat prompt 並提取 Mel 頻譜
   2. audio_encoder 將 Mel → audio_hidden
   3. thinker_embeddings 將 token IDs → text_embeddings
   4. 替換 <|audio_pad|> 位置為 audio_hidden
-  5. stateful decoder 自回歸解碼（KV cache 內建）
+  5. decoder 自回歸解碼（顯式 KV cache I/O）
   6. parse_asr_output 解析輸出
 
 參考：https://github.com/QwenLM/Qwen3-ASR
-符合 PRD §6.3.2（Qwen3-ASR 整合）、§6.3.5（OpenVINO INT8 路徑）。
+符合 PRD §6.3.2（Qwen3-ASR 整合）。
 """
 from __future__ import annotations
 
@@ -240,19 +240,19 @@ def _build_numpy_processor(model_dir: Path):
     return proc
 
 
-class QwenOpenVinoEngine:
-    """Qwen3-ASR OpenVINO INT8 引擎（3-part stateful 架構）。
+class QwenOnnxEngine:
+    """Qwen3-ASR ONNX Runtime 引擎（3-part 架構，顯式 KV cache）。
 
-    使用官方 Qwen3ASRProcessor 做前後處理，OpenVINO 做推理。
+    使用 onnxruntime.InferenceSession 做推理，全平台通用。
 
     典型用法::
 
-        engine = QwenOpenVinoEngine()
-        engine.prepare("~/.airtype/models/qwen3-asr-0.6b-openvino-int8/")
+        engine = QwenOnnxEngine()
+        engine.prepare("~/.airtype/models/qwen3-asr-0.6b-onnx-int8/")
         result = engine.recognize(audio)
     """
 
-    ENGINE_ID = "qwen3-openvino"
+    ENGINE_ID = "qwen3-onnx"
     SUPPORTED_LANGUAGES = list(_LANG_TO_BCP47.values())
 
     def __init__(self) -> None:
@@ -260,16 +260,17 @@ class QwenOpenVinoEngine:
         self._config: dict[str, Any] = {}
         self._loaded: bool = False
 
-        # OpenVINO 編譯模型與推理請求
-        self._audio_encoder = None
-        self._thinker_embeddings = None
-        self._decoder = None
-        self._enc_request = None
-        self._emb_request = None
-        self._dec_request = None
+        # ONNX Runtime sessions
+        self._enc_session = None  # audio_encoder
+        self._emb_session = None  # thinker_embeddings
+        self._dec_session = None  # decoder
 
-        # 官方 Processor（tokenizer + feature_extractor）
+        # Processor（tokenizer + feature_extractor）
         self._processor = None
+
+        # KV cache 元資訊（從 decoder 模型輸入推導）
+        self._kv_input_names: list[str] = []
+        self._kv_output_names: list[str] = []
 
         # 上下文偏移
         self._hot_words: list[HotWord] = []
@@ -280,51 +281,68 @@ class QwenOpenVinoEngine:
     # ------------------------------------------------------------------
 
     def load_model(self, model_path: str, config: dict[str, Any] | None = None) -> None:
-        """載入 3-part OpenVINO IR 模型與官方 Processor。"""
+        """載入 3-part ONNX 模型與 Processor。"""
+        import onnxruntime as ort
+
         model_dir = Path(model_path)
         if not model_dir.exists():
             raise FileNotFoundError(
                 f"模型目錄不存在：{model_path}\n"
-                "請至設定頁面下載 OpenVINO 模型。"
+                "請至設定頁面下載 ONNX 模型。"
             )
 
         # 驗證必要檔案
-        for fname in ("audio_encoder_model.xml", "decoder_model.xml"):
+        for fname in ("audio_encoder_model.onnx", "decoder_model.onnx"):
             if not (model_dir / fname).exists():
                 raise FileNotFoundError(f"缺少必要模型檔案：{model_dir / fname}")
 
-        import openvino as ov
-
         config = config or {}
-        device: str = config.get("device", "CPU")
-        core = ov.Core()
+
+        # 選擇 Execution Provider（macOS 可用 CoreML 加速）
+        providers = []
+        available = ort.get_available_providers()
+        if "CoreMLExecutionProvider" in available:
+            providers.append("CoreMLExecutionProvider")
+        providers.append("CPUExecutionProvider")
 
         # 載入 3 個子模型
-        logger.debug("載入 audio_encoder_model...")
-        self._audio_encoder = core.compile_model(
-            str(model_dir / "audio_encoder_model.xml"), device
+        logger.debug("載入 audio_encoder_model.onnx...")
+        self._enc_session = ort.InferenceSession(
+            str(model_dir / "audio_encoder_model.onnx"), providers=providers,
         )
-        self._enc_request = self._audio_encoder.create_infer_request()
 
-        emb_xml = model_dir / "thinker_embeddings_model.xml"
-        if emb_xml.exists():
-            logger.debug("載入 thinker_embeddings_model...")
-            self._thinker_embeddings = core.compile_model(str(emb_xml), device)
-            self._emb_request = self._thinker_embeddings.create_infer_request()
+        emb_path = model_dir / "thinker_embeddings_model.onnx"
+        if emb_path.exists():
+            logger.debug("載入 thinker_embeddings_model.onnx...")
+            self._emb_session = ort.InferenceSession(
+                str(emb_path), providers=providers,
+            )
 
-        logger.debug("載入 decoder_model...")
-        self._decoder = core.compile_model(
-            str(model_dir / "decoder_model.xml"), device
+        logger.debug("載入 decoder_model.onnx...")
+        self._dec_session = ort.InferenceSession(
+            str(model_dir / "decoder_model.onnx"), providers=providers,
         )
-        self._dec_request = self._decoder.create_infer_request()
 
-        # 載入官方 Qwen3ASRProcessor
+        # 探查 decoder 的 KV cache 輸入/輸出名稱
+        self._kv_input_names = [
+            inp.name for inp in self._dec_session.get_inputs()
+            if inp.name.startswith("past_key_values")
+        ]
+        self._kv_output_names = [
+            out.name for out in self._dec_session.get_outputs()
+            if out.name.startswith("present")
+        ]
+
+        # 載入 Processor
         self._processor = self._load_processor(model_dir)
 
         self._model_path = model_path
         self._config = config
         self._loaded = True
-        logger.info("QwenOpenVinoEngine 已就緒（裝置：%s）", device)
+        logger.info(
+            "QwenOnnxEngine 已就緒（providers=%s, kv_pairs=%d）",
+            providers, len(self._kv_input_names),
+        )
 
     def recognize(self, audio: np.ndarray) -> ASRResult:
         """批次辨識音訊。"""
@@ -341,12 +359,12 @@ class QwenOpenVinoEngine:
         )
 
     def recognize_stream(self, chunk: np.ndarray) -> PartialResult:
-        """OpenVINO 批次路徑不支援串流辨識。"""
+        """ONNX 批次路徑不支援串流辨識。"""
         return PartialResult(text="", is_final=False)
 
     @property
     def supports_hot_words(self) -> bool:
-        """Qwen3-ASR OpenVINO 不支援原生熱詞偏置。"""
+        """Qwen3-ASR ONNX 不支援原生熱詞偏置。"""
         return False
 
     def set_hot_words(self, words: list[HotWord]) -> None:
@@ -359,15 +377,14 @@ class QwenOpenVinoEngine:
         return list(self.SUPPORTED_LANGUAGES)
 
     def unload(self) -> None:
-        self._enc_request = None
-        self._emb_request = None
-        self._dec_request = None
-        self._audio_encoder = None
-        self._thinker_embeddings = None
-        self._decoder = None
+        self._enc_session = None
+        self._emb_session = None
+        self._dec_session = None
         self._processor = None
+        self._kv_input_names = []
+        self._kv_output_names = []
         self._loaded = False
-        logger.info("QwenOpenVinoEngine 已卸載")
+        logger.info("QwenOnnxEngine 已卸載")
 
     def prepare(self, model_path: str, config: dict[str, Any] | None = None) -> None:
         """設定模型路徑（延遲載入）。"""
@@ -388,9 +405,8 @@ class QwenOpenVinoEngine:
 
     @staticmethod
     def _load_processor(model_dir: Path):
-        """載入官方 Qwen3ASRProcessor（tokenizer + feature_extractor）。"""
+        """載入 Qwen3ASRProcessor（tokenizer + feature_extractor）。"""
         try:
-            # 透過 qwen_asr 套件載入（會自動註冊 Qwen3ASRConfig）
             from qwen_asr.inference.qwen3_asr import Qwen3ASRProcessor  # noqa: F811
             from transformers import AutoProcessor
             proc = AutoProcessor.from_pretrained(
@@ -434,7 +450,6 @@ class QwenOpenVinoEngine:
                     return BatchFeature(data=result, tensor_type=kwargs.get("return_tensors"))
 
                 def apply_chat_template(self, messages, add_generation_prompt=False, tokenize=False):
-                    import json
                     if self._chat_template:
                         from jinja2 import Template
                         tmpl = Template(self._chat_template)
@@ -534,14 +549,12 @@ class QwenOpenVinoEngine:
                 mel_features, ((0, 0), (0, pad_len)), mode="constant",
             )
         mel_batch = mel_features[np.newaxis, :, :].astype(np.float32)
-        self._enc_request.infer({"mel": mel_batch})
-        audio_hidden = self._enc_request.get_output_tensor(0).data.copy()
+        [audio_hidden] = self._enc_session.run(None, {"mel": mel_batch})
         n_audio_tokens = audio_hidden.shape[1]
         logger.debug("Audio encoder: shape=%s", audio_hidden.shape)
 
         # 3. 建構 prompt 並取得 input_ids
         prompt_text = self._build_text_prompt(self._context_text)
-        # 將 prompt 中的 <|audio_pad|> 擴展為正確數量
         audio_pad_str = self._processor.tokenizer.audio_token if hasattr(
             self._processor.tokenizer, "audio_token"
         ) else "<|audio_pad|>"
@@ -553,11 +566,10 @@ class QwenOpenVinoEngine:
         input_ids = self._processor.tokenizer.encode(expanded_prompt, add_special_tokens=False)
 
         # 4. Thinker embeddings
-        if self._emb_request is None:
+        if self._emb_session is None:
             raise RuntimeError("thinker_embeddings 模型未載入")
         ids_np = np.array([input_ids], dtype=np.int64)
-        self._emb_request.infer({"input_ids": ids_np})
-        text_embeddings = self._emb_request.get_output_tensor(0).data.copy()
+        [text_embeddings] = self._emb_session.run(None, {"input_ids": ids_np})
 
         # 5. 替換 <|audio_pad|> 位置為 audio_hidden
         combined = text_embeddings.copy()
@@ -572,11 +584,10 @@ class QwenOpenVinoEngine:
                 len(audio_pad_positions), n_audio_tokens,
             )
 
-        # 6. Greedy decode（stateful decoder）
+        # 6. Greedy decode
         generated_ids, confidence = self._greedy_decode(combined)
 
-        # 7. 解碼並用官方 parse_asr_output 解析
-        # 不跳過特殊 token，保留 <asr_text> 標記供 _parse_output 分割
+        # 7. 解碼並解析輸出
         raw_text = self._processor.tokenizer.decode(
             generated_ids, skip_special_tokens=False,
         )
@@ -593,26 +604,31 @@ class QwenOpenVinoEngine:
         self,
         initial_embeddings: np.ndarray,
     ) -> tuple[list[int], float]:
-        """Greedy decoding（stateful decoder with internal KV cache）。
+        """Greedy decoding（顯式 KV cache I/O）。
 
         流程：
-        1. reset_state() 清空 KV cache
-        2. Prefill：一次送入所有嵌入
-        3. Decode：每步只送一個新 token 嵌入
+        1. 初始化空的 past_key_values tensors
+        2. Prefill：一次送入所有嵌入，取得 present KV
+        3. Decode：每步送一個新 token 嵌入 + 上一步的 present KV
         """
-        self._dec_request.reset_state()
-
         seq_len = initial_embeddings.shape[1]
         generated: list[int] = []
         log_probs: list[float] = []
 
+        # 建構初始 KV cache（空的）
+        kv_cache = self._build_empty_kv_cache()
+
         # Prefill
         position_ids = np.arange(seq_len, dtype=np.int64).reshape(1, -1)
-        self._dec_request.infer({
+        dec_inputs = {
             "input_embeds": initial_embeddings,
             "position_ids": position_ids,
-        })
-        logits = self._dec_request.get_output_tensor(0).data.copy()
+        }
+        dec_inputs.update(kv_cache)
+
+        dec_outputs = self._dec_session.run(None, dec_inputs)
+        logits = dec_outputs[0]
+        kv_cache = self._extract_kv_cache(dec_outputs)
 
         last_logits = (
             logits[0, -1, :].astype(np.float64)
@@ -635,16 +651,19 @@ class QwenOpenVinoEngine:
 
             # 新 token 嵌入
             new_token_np = np.array([[next_token]], dtype=np.int64)
-            self._emb_request.infer({"input_ids": new_token_np})
-            new_emb = self._emb_request.get_output_tensor(0).data.copy()
+            [new_emb] = self._emb_session.run(None, {"input_ids": new_token_np})
 
-            # 單步 decode（KV cache 自動累積）
+            # 單步 decode（顯式 KV cache）
             pos_ids = np.array([[current_pos]], dtype=np.int64)
-            self._dec_request.infer({
+            dec_inputs = {
                 "input_embeds": new_emb,
                 "position_ids": pos_ids,
-            })
-            logits = self._dec_request.get_output_tensor(0).data.copy()
+            }
+            dec_inputs.update(kv_cache)
+
+            dec_outputs = self._dec_session.run(None, dec_inputs)
+            logits = dec_outputs[0]
+            kv_cache = self._extract_kv_cache(dec_outputs)
             current_pos += 1
 
             last_logits = (
@@ -658,6 +677,33 @@ class QwenOpenVinoEngine:
             if log_probs else 0.0
         )
         return generated, confidence
+
+    def _build_empty_kv_cache(self) -> dict[str, np.ndarray]:
+        """建構空的 KV cache tensors（形狀從 decoder 模型輸入推導）。"""
+        kv = {}
+        for inp in self._dec_session.get_inputs():
+            if inp.name.startswith("past_key_values"):
+                # 動態軸為 seq_len（通常是最後一維或倒數第二維），設為 0
+                shape = []
+                for dim in inp.shape:
+                    if isinstance(dim, int):
+                        shape.append(dim)
+                    else:
+                        # 動態維度（字串如 "past_sequence_length"），設為 0
+                        shape.append(0)
+                kv[inp.name] = np.zeros(shape, dtype=np.float32)
+        return kv
+
+    def _extract_kv_cache(self, dec_outputs: list) -> dict[str, np.ndarray]:
+        """從 decoder 輸出中提取 present KV cache，映射為下一步的 past KV 輸入。"""
+        output_names = [out.name for out in self._dec_session.get_outputs()]
+        kv = {}
+        for i, name in enumerate(output_names):
+            if name.startswith("present"):
+                # present.0.key → past_key_values.0.key
+                past_name = name.replace("present", "past_key_values", 1)
+                kv[past_name] = dec_outputs[i]
+        return kv
 
     @staticmethod
     def _parse_output(raw: str) -> tuple[str, str]:
@@ -712,13 +758,13 @@ class QwenOpenVinoEngine:
 
 
 def register(registry: ASREngineRegistry) -> bool:
-    """若 openvino 套件可用，將 QwenOpenVinoEngine 登錄至 registry。"""
+    """若 onnxruntime 套件可用，將 QwenOnnxEngine 登錄至 registry。"""
     try:
-        import openvino as ov  # noqa: F401
+        import onnxruntime as ort  # noqa: F401
     except ImportError:
-        logger.debug("openvino 套件未安裝，跳過 '%s' 登錄", QwenOpenVinoEngine.ENGINE_ID)
+        logger.debug("onnxruntime 套件未安裝，跳過 '%s' 登錄", QwenOnnxEngine.ENGINE_ID)
         return False
 
-    registry.register_engine(QwenOpenVinoEngine.ENGINE_ID, QwenOpenVinoEngine)
-    logger.info("已登錄 ASR 引擎：%s", QwenOpenVinoEngine.ENGINE_ID)
+    registry.register_engine(QwenOnnxEngine.ENGINE_ID, QwenOnnxEngine)
+    logger.info("已登錄 ASR 引擎：%s", QwenOnnxEngine.ENGINE_ID)
     return True

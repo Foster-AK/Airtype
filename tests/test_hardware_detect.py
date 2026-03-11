@@ -198,12 +198,12 @@ class TestInferencePathRecommendation(unittest.TestCase):
         self.assertEqual(path.engine, "qwen3-pytorch-cuda")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
-    def test_nvidia_vram_below_2gb_falls_back_to_openvino(self):
+    def test_nvidia_vram_below_2gb_falls_back_to_onnx(self):
         """NVIDIA GPU VRAM<2GB → 退回至 CPU 路徑。"""
         caps = self._make_caps(gpu_vendor="nvidia", gpu_vram_mb=1024, total_ram_mb=8192)
         path = recommend_inference_path(caps)
-        # 應退回至 CPU 路徑（OpenVINO 或 sherpa-onnx）
-        self.assertIn(path.engine, ["qwen3-openvino", "sherpa-onnx"])
+        # 應退回至 CPU 路徑（ONNX Runtime 或 sherpa-onnx）
+        self.assertIn(path.engine, ["qwen3-onnx", "sherpa-onnx"])
 
     # --- AMD/Intel 分支 ---
 
@@ -223,18 +223,18 @@ class TestInferencePathRecommendation(unittest.TestCase):
 
     # --- CPU 分支 ---
 
-    def test_cpu_only_ram_ge_6gb_recommends_openvino_06b(self):
-        """無 GPU、RAM≥6GB → qwen3-openvino + qwen3-asr-0.6b。"""
+    def test_cpu_only_ram_ge_6gb_recommends_onnx_06b(self):
+        """無 GPU、RAM≥6GB → qwen3-onnx + qwen3-asr-0.6b。"""
         caps = self._make_caps(gpu_vendor=None, gpu_vram_mb=0, total_ram_mb=8192)
         path = recommend_inference_path(caps)
-        self.assertEqual(path.engine, "qwen3-openvino")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
-    def test_cpu_only_ram_exactly_6gb_recommends_openvino(self):
-        """無 GPU、RAM=6144MB（恰好6GB）→ qwen3-openvino + 0.6b。"""
+    def test_cpu_only_ram_exactly_6gb_recommends_onnx(self):
+        """無 GPU、RAM=6144MB（恰好6GB）→ qwen3-onnx + 0.6b。"""
         caps = self._make_caps(gpu_vendor=None, gpu_vram_mb=0, total_ram_mb=6144)
         path = recommend_inference_path(caps)
-        self.assertEqual(path.engine, "qwen3-openvino")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
     def test_cpu_only_ram_below_6gb_recommends_sherpa(self):
@@ -254,16 +254,16 @@ class TestInferencePathRecommendation(unittest.TestCase):
         self.assertEqual(path.model, "qwen3-asr-1.7b")
 
     def test_spec_scenario_cpu_8gb_ram(self):
-        """Spec §推理路徑建議：無 GPU + 8GB RAM → qwen3-openvino + 0.6b。"""
+        """Spec §推理路徑建議：無 GPU + 8GB RAM → qwen3-onnx + 0.6b。"""
         caps = self._make_caps(gpu_vendor=None, gpu_vram_mb=0, total_ram_mb=8192)
         path = recommend_inference_path(caps)
-        self.assertEqual(path.engine, "qwen3-openvino")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
     def test_inference_path_dataclass(self):
         """InferencePath dataclass 應包含 engine 和 model 欄位。"""
-        path = InferencePath(engine="qwen3-openvino", model="qwen3-asr-0.6b")
-        self.assertEqual(path.engine, "qwen3-openvino")
+        path = InferencePath(engine="qwen3-onnx", model="qwen3-asr-0.6b")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
 

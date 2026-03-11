@@ -61,7 +61,7 @@ def _collect_system_info() -> dict:
     except ImportError:
         info["ram"] = "未知"
 
-    # GPU 偵測（嘗試 torch / OpenVINO）
+    # GPU 偵測（嘗試 torch）
     gpu_info = "未偵測到 GPU"
     try:
         import torch

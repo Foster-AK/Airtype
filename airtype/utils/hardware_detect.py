@@ -546,7 +546,7 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
     1. NVIDIA GPU，VRAM≥4GB  → qwen3-pytorch-cuda + qwen3-asr-1.7b
     2. NVIDIA GPU，VRAM≥2GB  → qwen3-pytorch-cuda + qwen3-asr-0.6b
     3. AMD/Intel GPU          → chatllm-vulkan + qwen3-asr-0.6b
-    4. CPU，RAM≥6GB           → qwen3-openvino + qwen3-asr-0.6b
+    4. CPU，RAM≥6GB           → qwen3-onnx + qwen3-asr-0.6b
     5. CPU，RAM<6GB            → sherpa-onnx + sensevoice-small
 
     Args:
@@ -576,8 +576,8 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
 
     # CPU 路徑
     if ram_mb >= _RAM_6GB:
-        logger.info("建議路徑：OpenVINO INT8 0.6B（RAM=%dMB）", ram_mb)
-        return InferencePath(engine="qwen3-openvino", model="qwen3-asr-0.6b")
+        logger.info("建議路徑：ONNX Runtime 0.6B（RAM=%dMB）", ram_mb)
+        return InferencePath(engine="qwen3-onnx", model="qwen3-asr-0.6b")
     else:
         logger.info("建議路徑：sherpa-onnx SenseVoice（RAM=%dMB）", ram_mb)
         return InferencePath(engine="sherpa-onnx", model="sensevoice-small")

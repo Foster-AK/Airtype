@@ -42,14 +42,14 @@ _MANIFEST_PATH = _get_manifest_path()
 # ---------------------------------------------------------------------------
 # 模型家族 → 引擎 ID 後備映射表（當 manifest 查詢失敗時使用）
 # 新增 ASR 引擎時需同步更新此映射。
-# value 清單為優先順序（openvino > pytorch-cuda > vulkan）。
+# value 清單為優先順序（onnx > pytorch-cuda > vulkan）。
 # ---------------------------------------------------------------------------
 
 _MODEL_ENGINE_MAP: dict[str, list[str]] = {
-    "qwen3-asr-1.7b-openvino": ["qwen3-openvino"],
-    "qwen3-asr-0.6b-openvino": ["qwen3-openvino"],
-    "qwen3-asr-0.6b": ["qwen3-openvino", "qwen3-pytorch-cuda", "qwen3-vulkan"],
-    "qwen3-asr-1.7b": ["qwen3-openvino", "qwen3-pytorch-cuda", "qwen3-vulkan"],
+    "qwen3-asr-1.7b-onnx": ["qwen3-onnx"],
+    "qwen3-asr-0.6b-onnx": ["qwen3-onnx"],
+    "qwen3-asr-0.6b": ["qwen3-onnx", "qwen3-pytorch-cuda", "qwen3-vulkan"],
+    "qwen3-asr-1.7b": ["qwen3-onnx", "qwen3-pytorch-cuda", "qwen3-vulkan"],
     "qwen3-asr-1.7b-vulkan": ["qwen3-vulkan"],
     "qwen3-asr-0.6b-vulkan": ["qwen3-vulkan"],
     "qwen3-asr-0.6b-vulkan-q4": ["qwen3-vulkan"],
@@ -213,7 +213,7 @@ class ASREngineRegistry:
     使用方式::
 
         registry = ASREngineRegistry()
-        registry.register_engine("qwen3-openvino", QwenOpenVINOEngine)
+        registry.register_engine("qwen3-onnx", QwenOnnxEngine)
         registry.load_default_engine(config)  # 載入 voice.asr_model 指定引擎
 
         result = registry.active_engine.recognize(audio)
@@ -237,7 +237,7 @@ class ASREngineRegistry:
         """以字串 ID 登錄引擎工廠。
 
         Args:
-            engine_id: 引擎識別字串（例如 "qwen3-openvino"、"breeze-asr-25"）。
+            engine_id: 引擎識別字串（例如 "qwen3-onnx"、"breeze-asr-25"）。
             factory: 無參數 callable，呼叫後回傳 ASREngine 實例。
         """
         self._factories[engine_id] = factory
@@ -439,7 +439,7 @@ class ASREngineRegistry:
         """以家族名稱前綴 + 引擎 ID 從 manifest 搜尋模型路徑（後備策略）。
 
         當 config 中的 asr_model 為家族名（如 "qwen3-asr-0.6b"）而非
-        manifest 中的完整 ID（如 "qwen3-asr-0.6b-openvino"）時使用。
+        manifest 中的完整 ID（如 "qwen3-asr-0.6b-onnx"）時使用。
 
         搜尋條件：manifest 條目 ID 以 family_prefix 開頭，且其
         inference_engine（經 alias 轉換後）等於 engine_id。

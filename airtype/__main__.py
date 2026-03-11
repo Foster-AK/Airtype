@@ -60,7 +60,7 @@ def _acquire_instance_lock(
 
 # manifest inference_engine → 引擎模組映射
 _ENGINE_MODULE_MAP: dict[str, str] = {
-    "qwen3-openvino": "airtype.core.asr_qwen_openvino",
+    "qwen3-onnx": "airtype.core.asr_qwen_onnx",
     "qwen3-pytorch-cuda": "airtype.core.asr_qwen_pytorch",
     "chatllm-vulkan": "airtype.core.asr_qwen_vulkan",
     "sherpa-onnx": "airtype.core.asr_sherpa",

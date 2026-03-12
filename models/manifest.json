@@ -3,19 +3,6 @@
   "_version": "2.0.0",
   "models": [
     {
-      "id": "qwen3-asr-1.7b-onnx",
-      "filename": "qwen3-asr-1.7b-onnx-int8.zip",
-      "size_bytes": 3600000000,
-      "description": "Qwen3-ASR 1.7B ONNX INT8（跨平台 CPU 高品質路徑）",
-      "inference_engine": "qwen3-onnx",
-      "category": "asr",
-      "has_thinking_mode": false,
-      "thinking_disable_token": null,
-      "urls": [],
-      "fallback_urls": [],
-      "sha256": ""
-    },
-    {
       "id": "qwen3-asr-0.6b-onnx",
       "filename": "qwen3-asr-0.6b-onnx-int8.zip",
       "size_bytes": 1200000000,
@@ -24,7 +11,9 @@
       "category": "asr",
       "has_thinking_mode": false,
       "thinking_disable_token": null,
-      "urls": [],
+      "urls": [
+        "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx"
+      ],
       "fallback_urls": [],
       "sha256": ""
     },

@@ -115,6 +115,8 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+import sys as _sys
+
 exe = EXE(
     pyz,
     a.scripts,
@@ -123,7 +125,7 @@ exe = EXE(
     name="airtype",
     debug=False,
     bootloader_ignore_signals=False,
-    strip=True,
+    strip=not _sys.platform.startswith("win"),  # strip 僅 Unix 有效
     upx=True,
     console=False,
     icon="resources/icons/airtype_icon_486.ico",
@@ -133,7 +135,7 @@ coll = COLLECT(
     exe,
     a.binaries,
     a.datas,
-    strip=True,
+    strip=not _sys.platform.startswith("win"),  # strip 僅 Unix 有效
     upx=True,
     upx_exclude=[],
     name="airtype",

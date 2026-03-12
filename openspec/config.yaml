@@ -1,8 +1,4 @@
 schema: spec-driven
-locale: tw
-tdd: true
-parallel_tasks: true
-audit: true
 
 context: |
   Project: Airtype — 跨平台離線語音即時輸入工具
@@ -14,8 +10,12 @@ context: |
   Text injection: pyperclip + pyautogui (clipboard-based)
   Config: JSON (~/.airtype/config.json)
   Target platforms: Windows / macOS / Linux (desktop only)
-  Language: 繁體中文為主要介面語言，spec 檔案使用英文（normative language）
+  Language: 繁體中文為主要介面語言，spec 檔案使用中文（normative language）
   PRD: Airtype_PRD_v2.0.md
+locale: tw
+tdd: true
+parallel_tasks: true
+audit: true
 
 rules:
   proposal:

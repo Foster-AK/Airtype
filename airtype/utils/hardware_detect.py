@@ -577,7 +577,7 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
     # CPU 路徑
     if ram_mb >= _RAM_6GB:
         logger.info("建議路徑：ONNX Runtime 0.6B（RAM=%dMB）", ram_mb)
-        return InferencePath(engine="qwen3-onnx", model="qwen3-asr-0.6b")
+        return InferencePath(engine="qwen3-onnx", model="qwen3-asr-0.6b-onnx")
     else:
         logger.info("建議路徑：sherpa-onnx SenseVoice（RAM=%dMB）", ram_mb)
         return InferencePath(engine="sherpa-onnx", model="sensevoice-small")

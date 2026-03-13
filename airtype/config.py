@@ -49,7 +49,7 @@ class GeneralConfig:
 class VoiceConfig:
     input_device: Union[str, int] = "default"
     noise_reduction: bool = False
-    asr_model: str = "qwen3-asr-0.6b"
+    asr_model: str = "qwen3-asr-0.6b-onnx"
     asr_inference_backend: str = "auto"
     asr_language: str = "zh-TW"
     recognition_mode: str = "batch"
@@ -213,7 +213,10 @@ class AirtypeConfig:
         try:
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
-            return cls.from_dict(data)
+            cfg = cls.from_dict(data)
+            if _migrate_asr_model(cfg, path):
+                logger.info("已遷移舊版 ASR model ID，設定已更新")
+            return cfg
         except (json.JSONDecodeError, ValueError) as exc:
             bak = path.with_suffix(".json.bak")
             logger.warning("設定檔損毀（%s），備份為 %s，重建預設設定", exc, bak)
@@ -229,6 +232,33 @@ class AirtypeConfig:
 # ---------------------------------------------------------------------------
 # 工具函式
 # ---------------------------------------------------------------------------
+
+# 舊版 model ID → 新版 model ID 對照表（manifest 重構後需更新）
+_LEGACY_ASR_MODEL_MAP: dict[str, str] = {
+    "qwen3-asr-0.6b": "qwen3-asr-0.6b-onnx",
+    "qwen3-asr-1.7b": "qwen3-asr-0.6b-onnx",
+    "qwen3-asr-1.7b-openvino": "qwen3-asr-0.6b-onnx",
+    "qwen3-asr-0.6b-openvino": "qwen3-asr-0.6b-onnx",
+}
+
+
+def _migrate_asr_model(cfg: "AirtypeConfig", path: Path) -> bool:
+    """若 cfg.voice.asr_model 為舊版 ID，遷移至對應的新 ID 並儲存。
+
+    回傳 True 表示已遷移並儲存，False 表示無需遷移。
+    """
+    old_id = cfg.voice.asr_model
+    new_id = _LEGACY_ASR_MODEL_MAP.get(old_id)
+    if new_id is None:
+        return False
+    logger.warning("ASR model ID 已過時：'%s' → '%s'，自動遷移", old_id, new_id)
+    cfg.voice.asr_model = new_id
+    try:
+        cfg.save(path)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("遷移後儲存設定失敗：%s", exc)
+    return True
+
 
 def _ensure_config_dir() -> None:
     """確保 ~/.airtype/ 目錄存在，並設定 0o700 權限（僅限首次建立）。"""

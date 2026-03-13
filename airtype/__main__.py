@@ -337,6 +337,20 @@ def main() -> None:
     controller.startup()
     logger.info("Airtype 啟動完成")
 
+    # ── 5.4 ASR 引擎缺失警告（延遲至事件迴圈啟動後顯示） ──────────────
+    if asr_engine is None:
+        def _warn_no_asr_engine():
+            from PySide6.QtWidgets import QMessageBox
+            msg = QMessageBox()
+            msg.setWindowTitle("Airtype — 未載入 ASR 模型")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText(
+                "尚未下載任何 ASR 語音辨識模型，語音輸入功能將無法使用。\n\n"
+                "請前往「設定 → 模型管理」下載模型後重新啟動 Airtype。"
+            )
+            msg.exec()
+        QTimer.singleShot(500, _warn_no_asr_engine)
+
     # ── Qt 事件迴圈 ────────────────────────────────────────────────────
     exit_code = app.exec()
 

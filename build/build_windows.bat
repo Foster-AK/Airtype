@@ -49,17 +49,24 @@ call build_venv\Scripts\activate.bat
 echo [2/5] Installing core dependencies...
 python -m pip install --upgrade pip
 pip install -e .
-pip install tokenizers>=0.15 pyinstaller>=6.0
+pip install "tokenizers>=0.15" "pyinstaller>=6.0"
+
+:: -- Step 2.5: Remove unnecessary transitive dependencies from build venv --
+echo [2.5/5] Removing unnecessary transitive deps from build venv...
+:: sympy + mpmath: 由 onnxruntime 拉入，推理時不需要
+:: 注意：PySide6_Addons 不可移除，PyInstaller PySide6 hook 需要完整包結構
+::       PySide6_Addons 的 DLL 清理由 Step 4.5 的 cleanup_dist.py 負責
+pip uninstall sympy mpmath -y
 
 :: -- Step 3: Optional llama-cpp-python install --
 if /i "%LLAMA_MODE%"=="cpu" (
-    echo [3/5] Installing llama-cpp-python (CPU)...
+    echo [3/5] Installing llama-cpp-python ^(CPU^)...
     pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu --prefer-binary
 ) else if /i "%LLAMA_MODE%"=="cuda" (
-    echo [3/5] Installing llama-cpp-python (CUDA)...
+    echo [3/5] Installing llama-cpp-python ^(CUDA^)...
     pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124 --prefer-binary
 ) else if /i "%LLAMA_MODE%"=="both" (
-    echo [3/5] Installing llama-cpp-python (CPU + CUDA)...
+    echo [3/5] Installing llama-cpp-python ^(CPU + CUDA^)...
     pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu --prefer-binary
     pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124 --prefer-binary
 ) else (
@@ -99,10 +106,8 @@ echo  Build complete!
 echo  Output: dist\airtype\
 echo ================================================================
 
-:: Show final size
-for /f "tokens=3" %%a in ('dir /s dist\airtype\ ^| findstr "File(s)"') do (
-    echo  Package size: %%a bytes
-)
+:: Show final size (用 Python 計算，避免中文 Windows dir 輸出相容問題)
+python -c "import os; d='dist/airtype'; s=sum(os.path.getsize(os.path.join(r,f)) for r,_,fs in os.walk(d) for f in fs) if os.path.isdir(d) else 0; print(f' Package size: {s/1024/1024:.0f} MB ({s:,} bytes)')" 2>nul
 
 deactivate
 endlocal

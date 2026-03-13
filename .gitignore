@@ -16,8 +16,9 @@ build_venv/
 dist/
 
 # PyInstaller（airtype.spec 已追蹤，不排除）
-# build/ 目錄下的建置腳本已追蹤，但排除 PyInstaller 產物
+# build/ 目錄下的建置腳本已追蹤，但排除 PyInstaller 中間產物
 build/__pycache__/
+build/airtype/
 
 # chatllm binaries (DLL / EXE / LIB)
 chatllm/bin/*.dll
@@ -56,4 +57,8 @@ Desktop.ini
 .DS_Store
 
 # Misc
-=1.17
+# pip 在 cmd.exe 中執行 "pip install pkg>=x.y" 時，>= 的 > 被誤解為重定向，
+# 產生 "x.y"、"=x.y" 等垃圾檔案
+[0-9].[0-9]
+[0-9].[0-9][0-9]
+=[0-9].[0-9]*

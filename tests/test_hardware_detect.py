@@ -255,9 +255,16 @@ class TestInferencePathRecommendation(unittest.TestCase):
 
     # --- Apple Silicon 分支 ---
 
-    def test_apple_silicon_recommends_sherpa_sensevoice(self):
-        """Apple Silicon GPU → sherpa-onnx + sensevoice-small。"""
+    def test_apple_silicon_ram_ge_6gb_recommends_qwen3_mlx(self):
+        """Apple Silicon RAM>=6GB → qwen3-mlx + qwen3-asr-0.6b-mlx。"""
         caps = self._make_caps(gpu_vendor="apple", cpu_type="arm64", total_ram_mb=8192)
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "qwen3-mlx")
+        self.assertEqual(path.model, "qwen3-asr-0.6b-mlx")
+
+    def test_apple_silicon_ram_lt_6gb_recommends_sherpa(self):
+        """Apple Silicon RAM<6GB → sherpa-onnx + sensevoice-small。"""
+        caps = self._make_caps(gpu_vendor="apple", cpu_type="arm64", total_ram_mb=4096)
         path = recommend_inference_path(caps)
         self.assertEqual(path.engine, "sherpa-onnx")
         self.assertEqual(path.model, "sensevoice-small")

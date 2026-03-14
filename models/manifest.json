@@ -35,6 +35,34 @@
       "sha256": ""
     },
     {
+      "id": "qwen3-asr-0.6b-onnx",
+      "filename": "qwen3-asr-0.6b-onnx.zip",
+      "size_bytes": 1300000000,
+      "description": "Qwen3-ASR 0.6B ONNX（跨平台後備）",
+      "inference_engine": "qwen3-onnx",
+      "category": "asr",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
+      "id": "qwen3-asr-0.6b-mlx",
+      "filename": "Qwen3-ASR-0.6B",
+      "size_bytes": 1200000000,
+      "description": "Qwen3-ASR 0.6B MLX（Apple Silicon 專用，高效能原生推理）",
+      "inference_engine": "qwen3-mlx",
+      "category": "asr",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "urls": [
+        "https://huggingface.co/Qwen/Qwen3-ASR-0.6B"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
       "id": "sensevoice-small",
       "filename": "sherpa-onnx-sensevoice-small.zip",
       "size_bytes": 900000000,

@@ -12,6 +12,8 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
+from airtype.core.asr_qwen_common import AUDIO_PAD_ID
+
 
 # ── 模型目錄路徑（整合測試用）────────────────────────────────────────────────
 
@@ -23,13 +25,12 @@ _HAS_REAL_MODEL = _INT8_MODEL_DIR.exists() and any(_INT8_MODEL_DIR.glob("*.xml")
 
 
 def _make_mock_ov(*, has_decoder: bool = True, decoder_tokens: int = 0) -> MagicMock:
-    """建立完整的 mock openvino 模組，包含 encoder / decoder 模型。
+    """建立完整的 mock openvino 模組，包含 encoder / embeddings / decoder 模型。
 
     Args:
-        has_decoder: 若為 True，compile_model side_effect 依序回傳 encoder 與 decoder；
-                     若為 False，始終回傳 encoder mock。
+        has_decoder: 若為 True，compile_model side_effect 依序回傳
+                     encoder、embeddings、decoder；若為 False，只回傳 encoder。
         decoder_tokens: decoder 在輸出 EOS 前先生成的 token 數量（預設 0，立即 EOS）。
-                        大於 0 時可用於驗證信心分數計算路徑。
 
     Returns:
         可注入 sys.modules["openvino"] 的 MagicMock。
@@ -49,29 +50,38 @@ def _make_mock_ov(*, has_decoder: bool = True, decoder_tokens: int = 0) -> Magic
     mock_enc_model.input.return_value = mock_enc_input
     mock_enc_model.create_infer_request.return_value = mock_enc_request
 
+    # ── thinker_embeddings ──
+    emb_output_data = np.random.rand(1, 20, 512).astype(np.float32)
+    mock_emb_tensor = MagicMock()
+    mock_emb_tensor.data = emb_output_data
+    mock_emb_request = MagicMock()
+    mock_emb_request.get_output_tensor.return_value = mock_emb_tensor
+    mock_emb_model = MagicMock()
+    mock_emb_model.create_infer_request.return_value = mock_emb_request
+
     # ── decoder ──
-    # 建立 decoder_tokens 個非 EOS token 的 logits，接著輸出 EOS
+    vocab_size = 152000  # 大於 IM_END_ID (151645)
+
     def _logits(winning_token: int) -> np.ndarray:
-        arr = np.zeros((1, 1, 1000), dtype=np.float32)
+        arr = np.zeros((1, 1, vocab_size), dtype=np.float32)
         arr[0, 0, winning_token] = 10.0
         return arr
 
-    # 序列：[non-EOS token 100, 101, ...] 接 EOS(=2)
+    # EOS token ID = 151645 (IM_END_ID)
+    eos_id = 151645
     tensor_sequence = []
     for i in range(decoder_tokens):
         t = MagicMock()
-        t.data = _logits(100 + i)  # token IDs 100+ 都是普通 token
+        t.data = _logits(100 + i)
         tensor_sequence.append(t)
     eos_tensor = MagicMock()
-    eos_tensor.data = _logits(2)  # EOS
+    eos_tensor.data = _logits(eos_id)
     tensor_sequence.append(eos_tensor)
 
     mock_dec_request = MagicMock()
     if decoder_tokens == 0:
-        # 快速路徑：固定回傳 EOS
         mock_dec_request.get_output_tensor.return_value = eos_tensor
     else:
-        # 依序回傳 non-EOS，最後 EOS；超出序列後繼續回傳 EOS
         _call_idx = [0]
 
         def _get_tensor(*_args, **_kwargs):
@@ -81,23 +91,49 @@ def _make_mock_ov(*, has_decoder: bool = True, decoder_tokens: int = 0) -> Magic
 
         mock_dec_request.get_output_tensor.side_effect = _get_tensor
 
-    mock_dec_input_ids = MagicMock()
-    mock_dec_input_ids.any_name = "input_ids"
-    mock_dec_enc_hidden = MagicMock()
-    mock_dec_enc_hidden.any_name = "encoder_hidden_states"
     mock_dec_model = MagicMock()
-    mock_dec_model.inputs = [mock_dec_input_ids, mock_dec_enc_hidden]
     mock_dec_model.create_infer_request.return_value = mock_dec_request
 
     # ── Core ──
     mock_core = MagicMock()
     if has_decoder:
-        mock_core.compile_model.side_effect = [mock_enc_model, mock_dec_model]
+        mock_core.compile_model.side_effect = [
+            mock_enc_model, mock_emb_model, mock_dec_model,
+        ]
     else:
         mock_core.compile_model.return_value = mock_enc_model
 
     mock_ov.Core.return_value = mock_core
     return mock_ov
+
+
+def _make_mock_processor(n_audio_tokens: int = 10) -> MagicMock:
+    """建立模擬 Qwen3-ASR processor 的 mock。
+
+    Args:
+        n_audio_tokens: 音訊 token 數量（需與 encoder 輸出的 shape[1] 一致）。
+    """
+    mock_proc = MagicMock()
+
+    # feature_extractor：回傳 mel 特徵
+    mel = np.zeros((128, 100), dtype=np.float32)
+    mock_proc.feature_extractor.return_value = {"input_features": [mel]}
+
+    # tokenizer
+    mock_proc.tokenizer.audio_token = "<|audio_pad|>"
+    # encode 回傳的 token IDs 需包含正確數量的 AUDIO_PAD_ID
+    token_ids = [1, 2] + [AUDIO_PAD_ID] * n_audio_tokens + [3]
+    mock_proc.tokenizer.encode.return_value = token_ids
+    mock_proc.tokenizer.decode.return_value = "language Chinese<asr_text>測試"
+
+    # apply_chat_template
+    mock_proc.apply_chat_template.return_value = (
+        "<|im_start|>system\n<|im_end|>\n"
+        "<|im_start|>user\n<|audio_start|><|audio_pad|><|audio_end|><|im_end|>\n"
+        "<|im_start|>assistant\n"
+    )
+
+    return mock_proc
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -112,12 +148,14 @@ def engine():
 
 @pytest.fixture
 def model_dir(tmp_path):
-    """建立含假 OpenVINO IR 檔案的臨時模型目錄（encoder + decoder）。"""
+    """建立含假 OpenVINO IR 檔案的臨時模型目錄（encoder + embeddings + decoder）。"""
     for name in (
-        "openvino_encoder_model.xml",
-        "openvino_encoder_model.bin",
-        "openvino_decoder_with_past_model.xml",
-        "openvino_decoder_with_past_model.bin",
+        "audio_encoder_model.xml",
+        "audio_encoder_model.bin",
+        "thinker_embeddings_model.xml",
+        "thinker_embeddings_model.bin",
+        "decoder_model.xml",
+        "decoder_model.bin",
     ):
         (tmp_path / name).write_text("<placeholder>")
     return tmp_path
@@ -125,9 +163,14 @@ def model_dir(tmp_path):
 
 @pytest.fixture
 def encoder_only_dir(tmp_path):
-    """僅含 encoder XML 的目錄（無 decoder）。"""
-    (tmp_path / "openvino_encoder_model.xml").write_text("<placeholder>")
-    (tmp_path / "openvino_encoder_model.bin").write_text("<placeholder>")
+    """含 encoder + decoder 但無 embeddings 的目錄。"""
+    for name in (
+        "audio_encoder_model.xml",
+        "audio_encoder_model.bin",
+        "decoder_model.xml",
+        "decoder_model.bin",
+    ):
+        (tmp_path / name).write_text("<placeholder>")
     return tmp_path
 
 
@@ -165,14 +208,16 @@ class TestModelLoading:
     def test_load_model_sets_loaded_flag(self, engine, model_dir):
         """成功載入後 _loaded 應為 True。"""
         mock_ov = _make_mock_ov()
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(model_dir), {})
         assert engine._loaded
 
     def test_load_model_default_device_is_cpu(self, engine, model_dir):
         """未指定 device 時 compile_model 第二個引數應為 'CPU'。"""
         mock_ov = _make_mock_ov()
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(model_dir), {})
         first_call = mock_ov.Core.return_value.compile_model.call_args_list[0]
         assert first_call.args[1] == "CPU"
@@ -180,7 +225,8 @@ class TestModelLoading:
     def test_load_model_custom_device(self, engine, model_dir):
         """config['device'] 應傳遞至 compile_model。"""
         mock_ov = _make_mock_ov()
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(model_dir), {"device": "GPU"})
         first_call = mock_ov.Core.return_value.compile_model.call_args_list[0]
         assert first_call.args[1] == "GPU"
@@ -188,17 +234,19 @@ class TestModelLoading:
     def test_load_model_with_decoder(self, engine, model_dir):
         """有 decoder XML 時 _decoder 應不為 None。"""
         mock_ov = _make_mock_ov(has_decoder=True)
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(model_dir), {})
         assert engine._decoder is not None
 
     def test_load_model_encoder_only(self, engine, encoder_only_dir):
-        """無 decoder XML 時 _decoder 應為 None，但仍正常載入。"""
-        mock_ov = _make_mock_ov(has_decoder=False)
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        """無 thinker_embeddings XML 時 _thinker_embeddings 應為 None，但仍正常載入。"""
+        mock_ov = _make_mock_ov(has_decoder=True)
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(encoder_only_dir), {})
         assert engine._loaded
-        assert engine._decoder is None
+        assert engine._thinker_embeddings is None
 
 
 # ── Task 3.1c ── 延遲載入（Lazy Model Loading 需求）──────────────────────────
@@ -215,30 +263,25 @@ class TestLazyLoading:
     def test_recognize_triggers_lazy_load(self, engine, model_dir):
         """首次呼叫 recognize() 應自動載入模型（_loaded 變 True）。"""
         mock_ov = _make_mock_ov()
+        mock_proc = _make_mock_processor()
         engine.prepare(str(model_dir))
         audio = np.zeros(16000, dtype=np.float32)
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
-            with patch("airtype.core.asr_qwen_openvino.NumpyPreprocessor") as MockPrep:
-                MockPrep.return_value.extract_mel_spectrogram.return_value = (
-                    np.zeros((100, 128), dtype=np.float32)
-                )
-                engine.recognize(audio)
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=mock_proc):
+            engine.recognize(audio)
         assert engine._loaded
 
     def test_recognize_does_not_reload_on_second_call(self, engine, model_dir):
         """第二次 recognize() 不應重新建立 Core（即不重新載入模型）。"""
         mock_ov = _make_mock_ov()
+        mock_proc = _make_mock_processor()
         engine.prepare(str(model_dir))
         audio = np.zeros(16000, dtype=np.float32)
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
-            with patch("airtype.core.asr_qwen_openvino.NumpyPreprocessor") as MockPrep:
-                MockPrep.return_value.extract_mel_spectrogram.return_value = (
-                    np.zeros((100, 128), dtype=np.float32)
-                )
-                engine.recognize(audio)
-                core_calls_after_first = mock_ov.Core.call_count
-                engine.recognize(audio)
-        # 第二次不應再建立 Core
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=mock_proc):
+            engine.recognize(audio)
+            core_calls_after_first = mock_ov.Core.call_count
+            engine.recognize(audio)
         assert mock_ov.Core.call_count == core_calls_after_first
 
     def test_recognize_without_prepare_raises_runtime_error(self, engine):
@@ -254,15 +297,13 @@ class TestLazyLoading:
 class TestBatchRecognition:
     """驗證批次語音辨識需求。"""
 
-    def _recognize_with_mock(self, engine, model_dir, audio):
-        mock_ov = _make_mock_ov()
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
-            with patch("airtype.core.asr_qwen_openvino.NumpyPreprocessor") as MockPrep:
-                MockPrep.return_value.extract_mel_spectrogram.return_value = (
-                    np.zeros((100, 128), dtype=np.float32)
-                )
-                engine.load_model(str(model_dir), {})
-                return engine.recognize(audio)
+    def _recognize_with_mock(self, engine, model_dir, audio, decoder_tokens=0):
+        mock_ov = _make_mock_ov(decoder_tokens=decoder_tokens)
+        mock_proc = _make_mock_processor()
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=mock_proc):
+            engine.load_model(str(model_dir), {})
+            return engine.recognize(audio)
 
     def test_recognize_returns_asr_result(self, engine, model_dir):
         """recognize() 應回傳 ASRResult 實例。"""
@@ -306,22 +347,9 @@ class TestBatchRecognition:
     def test_recognize_confidence_nonzero_when_decoder_generates_tokens(
         self, engine, model_dir
     ):
-        """decoder 生成至少一個 token 時，信心分數應 > 0.0。
-
-        這驗證 greedy_decode 中的 log-prob 累積與信心計算路徑確實有效。
-        spec.md 要求 Mandarin 辨識信心 > 0.5 需真實模型才能完整驗證（整合測試），
-        此處驗證計算路徑不會讓信心永遠為 0。
-        """
-        # decoder_tokens=2 → 生成 token 100, 101 後遇 EOS
-        mock_ov = _make_mock_ov(decoder_tokens=2)
+        """decoder 生成至少一個 token 時，信心分數應 > 0.0。"""
         audio = np.zeros(16000, dtype=np.float32)
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
-            with patch("airtype.core.asr_qwen_openvino.NumpyPreprocessor") as MockPrep:
-                MockPrep.return_value.extract_mel_spectrogram.return_value = (
-                    np.zeros((100, 128), dtype=np.float32)
-                )
-                engine.load_model(str(model_dir), {})
-                result = engine.recognize(audio)
+        result = self._recognize_with_mock(engine, model_dir, audio, decoder_tokens=2)
         assert result.confidence > 0.0, (
             "生成 token 後信心分數應 > 0.0；"
             "若為 0.0 表示 log-prob 累積路徑未正確執行"
@@ -346,18 +374,19 @@ class TestContextBiasing:
         engine.set_context("今天天氣很好")
         assert engine._context_text == "今天天氣很好"
 
-    def test_build_prompt_tokens_empty_when_no_context(self, engine):
-        """無熱詞與語境時 _build_prompt_tokens() 應回傳空列表。"""
-        tokens = engine._build_prompt_tokens()
-        assert tokens == []
+    def test_build_text_prompt_returns_string_when_no_context(self, engine):
+        """無熱詞與語境時 _build_text_prompt() 應回傳字串。"""
+        engine._processor = _make_mock_processor()
+        result = engine._build_text_prompt()
+        assert isinstance(result, str)
 
-    def test_build_prompt_tokens_returns_list(self, engine):
-        """有熱詞時 _build_prompt_tokens() 應回傳 list（tokenizer 為 None 時回傳空列表）。"""
+    def test_build_text_prompt_includes_hot_words(self, engine):
+        """有熱詞時 _build_text_prompt() 應包含熱詞文字。"""
         from airtype.core.asr_engine import HotWord
         engine.set_hot_words([HotWord(word="PostgreSQL", weight=8)])
-        engine._tokenizer = None
-        tokens = engine._build_prompt_tokens()
-        assert isinstance(tokens, list)
+        engine._processor = _make_mock_processor()
+        result = engine._build_text_prompt()
+        assert isinstance(result, str)
 
     def test_hot_words_cleared_by_new_set(self, engine):
         """再次 set_hot_words() 應完全取代舊列表。"""
@@ -377,24 +406,27 @@ class TestUnload:
     def test_unload_clears_loaded_flag(self, engine, model_dir):
         """unload() 後 _loaded 應為 False。"""
         mock_ov = _make_mock_ov()
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(model_dir), {})
         assert engine._loaded
         engine.unload()
         assert not engine._loaded
 
     def test_unload_clears_encoder_reference(self, engine, model_dir):
-        """unload() 後 _encoder 應為 None。"""
+        """unload() 後 _audio_encoder 應為 None。"""
         mock_ov = _make_mock_ov()
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(model_dir), {})
         engine.unload()
-        assert engine._encoder is None
+        assert engine._audio_encoder is None
 
     def test_unload_clears_decoder_reference(self, engine, model_dir):
         """unload() 後 _decoder 應為 None。"""
         mock_ov = _make_mock_ov()
-        with patch.dict(sys.modules, {"openvino": mock_ov}):
+        with patch.dict(sys.modules, {"openvino": mock_ov}), \
+             patch("airtype.core.asr_qwen_openvino.load_processor", return_value=_make_mock_processor()):
             engine.load_model(str(model_dir), {})
         engine.unload()
         assert engine._decoder is None
@@ -456,7 +488,6 @@ class TestEngineRegistration:
         from airtype.core.asr_qwen_openvino import register
 
         registry = ASREngineRegistry()
-        # None in sys.modules 會讓 import openvino 拋出 ImportError
         with patch.dict(sys.modules, {"openvino": None}):
             result = register(registry)
         assert result is False

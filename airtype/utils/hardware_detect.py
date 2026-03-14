@@ -574,9 +574,10 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
     1. NVIDIA GPU，VRAM≥4GB  → qwen3-pytorch-cuda + qwen3-asr-1.7b
     2. NVIDIA GPU，VRAM≥2GB  → qwen3-pytorch-cuda + qwen3-asr-0.6b
     3. AMD/Intel GPU          → chatllm-vulkan + qwen3-asr-0.6b
-    4. Apple Silicon GPU      → sherpa-onnx + sensevoice-small
-    5. CPU，RAM≥6GB           → qwen3-openvino + qwen3-asr-0.6b
-    6. CPU，RAM<6GB            → sherpa-onnx + sensevoice-small
+    4. Apple Silicon，RAM≥6GB → qwen3-mlx + qwen3-asr-0.6b-mlx
+    5. Apple Silicon，RAM<6GB → sherpa-onnx + sensevoice-small
+    6. CPU，RAM≥6GB           → qwen3-openvino + qwen3-asr-0.6b
+    7. CPU，RAM<6GB            → sherpa-onnx + sensevoice-small
 
     Args:
         caps: 由 HardwareDetector.assess() 回傳的系統能力資料。
@@ -604,8 +605,12 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
         return InferencePath(engine="chatllm-vulkan", model="qwen3-asr-0.6b")
 
     elif vendor == "apple":
-        logger.info("建議路徑：Apple Silicon sherpa-onnx SenseVoice（vendor=%s）", vendor)
-        return InferencePath(engine="sherpa-onnx", model="sensevoice-small")
+        if ram_mb >= _RAM_6GB:
+            logger.info("建議路徑：Apple Silicon Qwen3-ASR MLX（vendor=%s, RAM=%dMB）", vendor, ram_mb)
+            return InferencePath(engine="qwen3-mlx", model="qwen3-asr-0.6b-mlx")
+        else:
+            logger.info("建議路徑：Apple Silicon sherpa-onnx SenseVoice（vendor=%s, RAM=%dMB）", vendor, ram_mb)
+            return InferencePath(engine="sherpa-onnx", model="sensevoice-small")
 
     # CPU 路徑
     if ram_mb >= _RAM_6GB:

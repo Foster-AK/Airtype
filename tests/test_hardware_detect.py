@@ -74,6 +74,38 @@ class TestGpuDetectionNvidia(unittest.TestCase):
         self.assertNotEqual(caps.gpu_vendor, "nvidia")
 
 
+class TestGpuDetectionAppleSilicon(unittest.TestCase):
+    """Apple Silicon GPU 偵測：mock system_profiler 輸出。"""
+
+    def test_apple_silicon_m1_detected(self):
+        """system_profiler 輸出含 Apple M1 時應回傳 vendor=apple。"""
+        profiler_output = (
+            "Graphics/Displays:\n"
+            "\n"
+            "    Apple M1:\n"
+            "\n"
+            "      Chipset Model: Apple M1\n"
+            "      Type: GPU\n"
+            "      Bus: Built-In\n"
+            "      Total Number of Cores: 8\n"
+            "      Vendor: Apple (0x106b)\n"
+            "      Metal Support: Metal 3\n"
+        )
+        # nvidia-smi 不存在（Apple Silicon 無 NVIDIA GPU）
+        def side_effect(cmd, *args, **kwargs):
+            if cmd[0] == "nvidia-smi":
+                raise FileNotFoundError("nvidia-smi not found")
+            return MagicMock(returncode=0, stdout=profiler_output, stderr="")
+
+        with patch("platform.system", return_value="Darwin"):
+            with patch("subprocess.run", side_effect=side_effect):
+                detector = HardwareDetector()
+                vendor, model, vram = detector._detect_gpu()
+
+        self.assertEqual(vendor, "apple")
+        self.assertIn("Apple M1", model)
+
+
 class TestGpuDetectionNoGpu(unittest.TestCase):
     """無 GPU 情境：所有 GPU 偵測均失敗。"""
 
@@ -221,6 +253,15 @@ class TestInferencePathRecommendation(unittest.TestCase):
         self.assertEqual(path.engine, "chatllm-vulkan")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
+    # --- Apple Silicon 分支 ---
+
+    def test_apple_silicon_recommends_sherpa_sensevoice(self):
+        """Apple Silicon GPU → sherpa-onnx + sensevoice-small。"""
+        caps = self._make_caps(gpu_vendor="apple", cpu_type="arm64", total_ram_mb=8192)
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "sherpa-onnx")
+        self.assertEqual(path.model, "sensevoice-small")
+
     # --- CPU 分支 ---
 
     def test_cpu_only_ram_ge_6gb_recommends_openvino_06b(self):
@@ -349,7 +390,26 @@ class TestRecommendLlm(unittest.TestCase):
         self.assertEqual(result.model, "qwen2.5-1.5b-instruct-q4_k_m")
         self.assertEqual(result.backend, "local")
 
-    # --- 分支 4：CPU-only RAM ≥ 8GB ---
+    # --- 分支 4/5：Apple Silicon ---
+
+    def test_apple_silicon_ram_ge_8gb_recommends_1_5b_no_warning(self):
+        """Apple Silicon RAM>=8GB → model=1.5b, backend=local, 無逾時警示。"""
+        caps = self._make_caps(gpu_vendor="apple", total_ram_mb=8192)
+        detector = self._make_detector_with_caps(caps)
+        result = detector.recommend_llm()
+        self.assertEqual(result.model, "qwen2.5-1.5b-instruct-q4_k_m")
+        self.assertEqual(result.backend, "local")
+        self.assertIsNone(result.warning)
+
+    def test_apple_silicon_ram_lt_8gb_recommends_disabled(self):
+        """Apple Silicon RAM<8GB → backend=disabled。"""
+        caps = self._make_caps(gpu_vendor="apple", total_ram_mb=4096)
+        detector = self._make_detector_with_caps(caps)
+        result = detector.recommend_llm()
+        self.assertIsNone(result.model)
+        self.assertEqual(result.backend, "disabled")
+
+    # --- 分支 6：CPU-only RAM ≥ 8GB ---
 
     def test_cpu_only_ram_ge_8gb_recommends_1_5b_with_warning(self):
         """CPU-only RAM≥8GB → model=1.5b, backend=local, warning=approaching_timeout_cpu。"""

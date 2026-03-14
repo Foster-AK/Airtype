@@ -38,7 +38,7 @@ class SystemCapabilities:
     """系統硬體能力快照。
 
     Attributes:
-        gpu_vendor:      GPU 廠商（"nvidia" / "amd" / "intel" / None）
+        gpu_vendor:      GPU 廠商（"nvidia" / "amd" / "intel" / "apple" / None）
         gpu_model:       GPU 型號字串（偵測失敗時為 None）
         gpu_vram_mb:     GPU 顯存容量（MB），無 GPU 時為 0
         cpu_type:        CPU 架構字串（e.g., "x86_64", "arm64"）
@@ -275,6 +275,8 @@ class HardwareDetector:
                 vendor = "amd"
             elif "intel" in output:
                 vendor = "intel"
+            elif "apple" in output:
+                vendor = "apple"
             else:
                 return None, None, 0
 
@@ -418,16 +420,18 @@ class HardwareDetector:
             return 0
 
     def recommend_llm(self) -> LlmRecommendation:
-        """建議 LLM 推理環境，依五分支決策樹回傳模型、後端與警示資訊。
+        """建議 LLM 推理環境，依決策樹回傳模型、後端與警示資訊。
 
         決策樹（依優先順序）：
         1. NVIDIA GPU，VRAM≥8GB  → 大型模型（7B），後端 local，無警示
         2. NVIDIA GPU，VRAM≥4GB  → 中型模型（3B），後端 local，無警示
         3. AMD/Intel GPU（任意）  → 小型模型（1.5B），後端 local，無警示
-        4. CPU-only，RAM≥8GB     → 小型模型（1.5B），後端 local，警示 approaching_timeout_cpu
-        5. CPU-only，RAM<8GB     → 停用 LLM，後端 disabled，無警示
+        4. Apple Silicon，RAM≥8GB → 小型模型（1.5B），後端 local，無警示
+        5. Apple Silicon，RAM<8GB → 停用 LLM，後端 disabled，無警示
+        6. CPU-only，RAM≥8GB     → 小型模型（1.5B），後端 local，警示 approaching_timeout_cpu
+        7. CPU-only，RAM<8GB     → 停用 LLM，後端 disabled，無警示
 
-        NVIDIA GPU VRAM < 4GB 時視為 CPU-only，fallthrough 至步驟 4/5。
+        NVIDIA GPU VRAM < 4GB 時視為 CPU-only，fallthrough 至步驟 6/7。
         """
         try:
             caps = self.assess()
@@ -474,6 +478,30 @@ class HardwareDetector:
                     backend="local",
                     warning=None,
                 )
+
+            # 分支 4/5：Apple Silicon（統一記憶體，效能優於純 CPU）
+            if vendor == "apple":
+                if ram_mb >= _LLM_RAM_8GB:
+                    logger.info(
+                        "LLM 建議：Apple Silicon 小型模型（RAM=%dMB ≥ 8GB）→ %s",
+                        ram_mb,
+                        _LLM_SMALL,
+                    )
+                    return LlmRecommendation(
+                        model=_LLM_SMALL,
+                        backend="local",
+                        warning=None,
+                    )
+                else:
+                    logger.info(
+                        "LLM 建議：Apple Silicon RAM 不足（RAM=%dMB < 8GB），停用 LLM",
+                        ram_mb,
+                    )
+                    return LlmRecommendation(
+                        model=None,
+                        backend="disabled",
+                        warning=None,
+                    )
 
             # 以下為 CPU-only 路徑（包含 NVIDIA VRAM < 4GB 的 fallthrough）
             if vendor == "nvidia":
@@ -546,8 +574,9 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
     1. NVIDIA GPU，VRAM≥4GB  → qwen3-pytorch-cuda + qwen3-asr-1.7b
     2. NVIDIA GPU，VRAM≥2GB  → qwen3-pytorch-cuda + qwen3-asr-0.6b
     3. AMD/Intel GPU          → chatllm-vulkan + qwen3-asr-0.6b
-    4. CPU，RAM≥6GB           → qwen3-openvino + qwen3-asr-0.6b
-    5. CPU，RAM<6GB            → sherpa-onnx + sensevoice-small
+    4. Apple Silicon GPU      → sherpa-onnx + sensevoice-small
+    5. CPU，RAM≥6GB           → qwen3-openvino + qwen3-asr-0.6b
+    6. CPU，RAM<6GB            → sherpa-onnx + sensevoice-small
 
     Args:
         caps: 由 HardwareDetector.assess() 回傳的系統能力資料。
@@ -573,6 +602,10 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
     elif vendor in ("amd", "intel"):
         logger.info("建議路徑：Vulkan 0.6B（vendor=%s）", vendor)
         return InferencePath(engine="chatllm-vulkan", model="qwen3-asr-0.6b")
+
+    elif vendor == "apple":
+        logger.info("建議路徑：Apple Silicon sherpa-onnx SenseVoice（vendor=%s）", vendor)
+        return InferencePath(engine="sherpa-onnx", model="sensevoice-small")
 
     # CPU 路徑
     if ram_mb >= _RAM_6GB:

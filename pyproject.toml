@@ -52,3 +52,8 @@ airtype = "airtype.__main__:main"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["airtype*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

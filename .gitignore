@@ -11,12 +11,10 @@ venv/
 env/
 
 # Build / Distribution
-build/
 build_tmp/
 dist/
 
-# PyInstaller
-*.spec
+
 
 # chatllm binaries (DLL / EXE / LIB)
 chatllm/bin/*.dll

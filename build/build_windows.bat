@@ -53,9 +53,9 @@ pip install "tokenizers>=0.15" "pyinstaller>=6.0"
 
 :: -- Step 2.5: Remove unnecessary transitive dependencies from build venv --
 echo [2.5/5] Removing unnecessary transitive deps from build venv...
-:: sympy + mpmath: 由 onnxruntime 拉入，推理時不需要
-:: 注意：PySide6_Addons 不可移除，PyInstaller PySide6 hook 需要完整包結構
-::       PySide6_Addons 的 DLL 清理由 Step 4.5 的 cleanup_dist.py 負責
+:: sympy + mpmath: pulled in by onnxruntime, not needed at inference time
+:: NOTE: do NOT uninstall PySide6_Addons - PyInstaller PySide6 hook needs it
+::       PySide6_Addons DLLs are cleaned up later by Step 4.5 cleanup_dist.py
 pip uninstall sympy mpmath -y
 
 :: -- Step 3: Optional llama-cpp-python install --
@@ -106,7 +106,7 @@ echo  Build complete!
 echo  Output: dist\airtype\
 echo ================================================================
 
-:: Show final size (用 Python 計算，避免中文 Windows dir 輸出相容問題)
+:: Show final size (Python-based, avoids Chinese Windows dir output issues)
 python -c "import os; d='dist/airtype'; s=sum(os.path.getsize(os.path.join(r,f)) for r,_,fs in os.walk(d) for f in fs) if os.path.isdir(d) else 0; print(f' Package size: {s/1024/1024:.0f} MB ({s:,} bytes)')" 2>nul
 
 deactivate

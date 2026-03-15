@@ -48,7 +48,7 @@ _MANIFEST_PATH = _get_manifest_path()
 _MODEL_ENGINE_MAP: dict[str, list[str]] = {
     "qwen3-asr-1.7b-onnx": ["qwen3-onnx"],
     "qwen3-asr-0.6b-onnx": ["qwen3-onnx"],
-    "qwen3-asr-0.6b": ["qwen3-onnx", "qwen3-pytorch-cuda", "qwen3-vulkan"],
+    "qwen3-asr-0.6b": ["qwen3-onnx", "qwen3-pytorch-cuda", "qwen3-vulkan", "qwen3-mlx"],
     "qwen3-asr-1.7b": ["qwen3-onnx", "qwen3-pytorch-cuda", "qwen3-vulkan"],
     "qwen3-asr-1.7b-vulkan": ["qwen3-vulkan"],
     "qwen3-asr-0.6b-vulkan": ["qwen3-vulkan"],

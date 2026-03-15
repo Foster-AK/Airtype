@@ -66,6 +66,7 @@ _ENGINE_MODULE_MAP: dict[str, str] = {
     "sherpa-onnx": "airtype.core.asr_sherpa",
     "faster-whisper": "airtype.core.asr_breeze",
     "breeze-asr-25": "airtype.core.asr_breeze",
+    "qwen3-mlx": "airtype.core.asr_qwen_mlx",
 }
 
 # 全部引擎模組（後備，manifest 讀取失敗時使用）

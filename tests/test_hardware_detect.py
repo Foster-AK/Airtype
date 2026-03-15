@@ -489,5 +489,92 @@ class TestRamDetectionFallbackWarning(unittest.TestCase):
         self.assertTrue(any("RAM" in msg for msg in log.output))
 
 
+# ---------------------------------------------------------------------------
+# 5.3 Apple Silicon Detection 與 MLX 推理路徑建議
+# ---------------------------------------------------------------------------
+
+
+class TestAppleSiliconDetection(unittest.TestCase):
+    """Apple Silicon Detection spec 情境。"""
+
+    def test_apple_silicon_detected_on_macos_arm64(self):
+        """macOS ARM64 環境 is_apple_silicon 應為 True。"""
+        caps = SystemCapabilities(
+            cpu_type="arm64",
+            total_ram_mb=16384,
+            available_disk_mb=102400,
+            is_apple_silicon=True,
+        )
+        self.assertTrue(caps.is_apple_silicon)
+
+    def test_apple_silicon_false_on_windows_x86(self):
+        """Windows x86_64 環境 is_apple_silicon 應為 False。"""
+        caps = SystemCapabilities(
+            cpu_type="x86_64",
+            total_ram_mb=16384,
+            available_disk_mb=102400,
+            is_apple_silicon=False,
+        )
+        self.assertFalse(caps.is_apple_silicon)
+
+    def test_assess_sets_apple_silicon_on_darwin_arm64(self):
+        """assess() 在 darwin + arm64 環境應設定 is_apple_silicon=True。"""
+        with patch("subprocess.run", side_effect=FileNotFoundError()):
+            with patch("sys.platform", "darwin"):
+                with patch("platform.machine", return_value="arm64"):
+                    detector = HardwareDetector()
+                    caps = detector.assess()
+        self.assertTrue(caps.is_apple_silicon)
+
+    def test_assess_sets_apple_silicon_false_on_win32(self):
+        """assess() 在 win32 環境應設定 is_apple_silicon=False。"""
+        with patch("subprocess.run", side_effect=FileNotFoundError()):
+            with patch("sys.platform", "win32"):
+                with patch("platform.machine", return_value="AMD64"):
+                    detector = HardwareDetector()
+                    caps = detector.assess()
+        self.assertFalse(caps.is_apple_silicon)
+
+
+class TestAppleSiliconInferencePath(unittest.TestCase):
+    """Apple Silicon 推理路徑建議。"""
+
+    def test_apple_silicon_recommends_mlx(self):
+        """Apple Silicon 環境應推薦 qwen3-mlx + qwen3-asr-0.6b。"""
+        caps = SystemCapabilities(
+            cpu_type="arm64",
+            total_ram_mb=16384,
+            available_disk_mb=102400,
+            is_apple_silicon=True,
+        )
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "qwen3-mlx")
+        self.assertEqual(path.model, "qwen3-asr-0.6b")
+
+    def test_apple_silicon_takes_priority_over_cpu_fallback(self):
+        """Apple Silicon 分支應優先於 CPU fallback（即使 RAM≥6GB）。"""
+        caps = SystemCapabilities(
+            gpu_vendor=None,
+            cpu_type="arm64",
+            total_ram_mb=8192,
+            available_disk_mb=102400,
+            is_apple_silicon=True,
+        )
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "qwen3-mlx")
+
+    def test_non_apple_silicon_falls_through(self):
+        """非 Apple Silicon 環境應沿用原有決策樹。"""
+        caps = SystemCapabilities(
+            gpu_vendor=None,
+            cpu_type="x86_64",
+            total_ram_mb=8192,
+            available_disk_mb=102400,
+            is_apple_silicon=False,
+        )
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "qwen3-onnx")
+
+
 if __name__ == "__main__":
     unittest.main()

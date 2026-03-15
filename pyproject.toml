@@ -27,6 +27,10 @@ breeze = [
     "transformers>=4.40",
 ]
 sherpa = ["sherpa-onnx>=1.9"]
+mlx = [
+    "mlx>=0.18.0",
+    "mlx-qwen3-asr>=0.1.0",
+]
 llm = [
     "llama-cpp-python>=0.2.90",
     "httpx>=0.27",

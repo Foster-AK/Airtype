@@ -504,3 +504,47 @@ def test_breeze_no_hot_words():
     from airtype.core.asr_breeze import BreezeAsrEngine
 
     assert BreezeAsrEngine().supports_hot_words is False
+
+
+# ---------------------------------------------------------------------------
+# 5.2 MLX 引擎在 _MODEL_ENGINE_MAP 中的解析測試
+# ---------------------------------------------------------------------------
+
+
+def test_model_engine_map_contains_qwen3_mlx():
+    """_MODEL_ENGINE_MAP 的 qwen3-asr-0.6b 候選清單應包含 qwen3-mlx。"""
+    from airtype.core.asr_engine import _MODEL_ENGINE_MAP
+
+    candidates = _MODEL_ENGINE_MAP.get("qwen3-asr-0.6b", [])
+    assert "qwen3-mlx" in candidates
+
+
+def test_model_name_resolves_via_mlx_backend(registry):
+    """asr_inference_backend="mlx" 時應解析到 qwen3-mlx。"""
+    from airtype.core.asr_engine import ASREngineRegistry
+
+    registry.register_engine("qwen3-onnx", MockASREngine)
+    registry.register_engine("qwen3-mlx", MockASREngine)
+    cfg = MagicMock()
+    cfg.voice.asr_model = "qwen3-asr-0.6b"
+    cfg.voice.asr_inference_backend = "mlx"
+    with patch.object(
+        ASREngineRegistry, "_resolve_engine_from_manifest", return_value=None
+    ):
+        registry.load_default_engine(cfg)
+    assert registry.active_engine_id == "qwen3-mlx"
+
+
+def test_model_name_auto_resolves_to_mlx_when_only_mlx_registered(registry):
+    """auto 模式下若僅 qwen3-mlx 可用應選中。"""
+    from airtype.core.asr_engine import ASREngineRegistry
+
+    registry.register_engine("qwen3-mlx", MockASREngine)
+    cfg = MagicMock()
+    cfg.voice.asr_model = "qwen3-asr-0.6b"
+    cfg.voice.asr_inference_backend = "auto"
+    with patch.object(
+        ASREngineRegistry, "_resolve_engine_from_manifest", return_value=None
+    ):
+        registry.load_default_engine(cfg)
+    assert registry.active_engine_id == "qwen3-mlx"

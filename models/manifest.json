@@ -18,6 +18,23 @@
       "sha256": ""
     },
     {
+      "id": "qwen3-asr-0.6b-mlx",
+      "filename": "qwen3-asr-0.6b-mlx",
+      "size_bytes": 1200000000,
+      "description": "Qwen3-ASR 0.6B MLX（macOS Apple Silicon 專用）",
+      "inference_engine": "qwen3-mlx",
+      "category": "asr",
+      "has_thinking_mode": false,
+      "thinking_disable_token": null,
+      "model_id": "Qwen/Qwen3-ASR-0.6B",
+      "hf_repo": "Qwen/Qwen3-ASR-0.6B",
+      "urls": [
+        "https://huggingface.co/Qwen/Qwen3-ASR-0.6B"
+      ],
+      "fallback_urls": [],
+      "sha256": ""
+    },
+    {
       "id": "sensevoice-small",
       "filename": "sherpa-onnx-sensevoice-small.zip",
       "size_bytes": 900000000,

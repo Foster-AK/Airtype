@@ -52,6 +52,7 @@ class SystemCapabilities:
     cpu_type: str = ""
     total_ram_mb: int = 0
     available_disk_mb: int = 0
+    is_apple_silicon: bool = False
 
 
 @dataclass
@@ -111,6 +112,9 @@ class HardwareDetector:
         cpu_type = platform.machine() or sys.platform
         total_ram_mb = self._get_total_ram_mb()
         available_disk_mb = self._get_available_disk_mb()
+        is_apple_silicon = (
+            sys.platform == "darwin" and platform.machine() == "arm64"
+        )
 
         caps = SystemCapabilities(
             gpu_vendor=gpu_vendor,
@@ -119,6 +123,7 @@ class HardwareDetector:
             cpu_type=cpu_type,
             total_ram_mb=total_ram_mb,
             available_disk_mb=available_disk_mb,
+            is_apple_silicon=is_apple_silicon,
         )
         logger.debug(
             "硬體評估完成：vendor=%s model=%s vram=%dMB ram=%dMB disk=%dMB",
@@ -558,6 +563,11 @@ def recommend_inference_path(caps: SystemCapabilities) -> InferencePath:
     vendor = caps.gpu_vendor
     vram_mb = caps.gpu_vram_mb
     ram_mb = caps.total_ram_mb
+
+    # Apple Silicon → MLX 0.6B（最高優先）
+    if caps.is_apple_silicon:
+        logger.info("建議路徑：MLX 0.6B（Apple Silicon）")
+        return InferencePath(engine="qwen3-mlx", model="qwen3-asr-0.6b")
 
     if vendor == "nvidia":
         if vram_mb >= _VRAM_4GB:

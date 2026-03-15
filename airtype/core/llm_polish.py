@@ -308,10 +308,11 @@ class APILLMEngine:
         except ImportError as exc:
             raise PolishError("httpx 未安裝，無法使用 API 模式") from exc
 
-        headers = {
-            "Authorization": f"Bearer {self._api_key}",
+        headers: dict[str, str] = {
             "Content-Type": "application/json",
         }
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
         payload = {
             "model": self._model,
             "messages": [

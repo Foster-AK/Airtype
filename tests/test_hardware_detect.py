@@ -198,12 +198,12 @@ class TestInferencePathRecommendation(unittest.TestCase):
         self.assertEqual(path.engine, "qwen3-pytorch-cuda")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
-    def test_nvidia_vram_below_2gb_falls_back_to_openvino(self):
+    def test_nvidia_vram_below_2gb_falls_back_to_onnx(self):
         """NVIDIA GPU VRAM<2GB → 退回至 CPU 路徑。"""
         caps = self._make_caps(gpu_vendor="nvidia", gpu_vram_mb=1024, total_ram_mb=8192)
         path = recommend_inference_path(caps)
-        # 應退回至 CPU 路徑（OpenVINO 或 sherpa-onnx）
-        self.assertIn(path.engine, ["qwen3-openvino", "sherpa-onnx"])
+        # 應退回至 CPU 路徑（ONNX Runtime 或 sherpa-onnx）
+        self.assertIn(path.engine, ["qwen3-onnx", "sherpa-onnx"])
 
     # --- AMD/Intel 分支 ---
 
@@ -223,18 +223,18 @@ class TestInferencePathRecommendation(unittest.TestCase):
 
     # --- CPU 分支 ---
 
-    def test_cpu_only_ram_ge_6gb_recommends_openvino_06b(self):
-        """無 GPU、RAM≥6GB → qwen3-openvino + qwen3-asr-0.6b。"""
+    def test_cpu_only_ram_ge_6gb_recommends_onnx_06b(self):
+        """無 GPU、RAM≥6GB → qwen3-onnx + qwen3-asr-0.6b。"""
         caps = self._make_caps(gpu_vendor=None, gpu_vram_mb=0, total_ram_mb=8192)
         path = recommend_inference_path(caps)
-        self.assertEqual(path.engine, "qwen3-openvino")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
-    def test_cpu_only_ram_exactly_6gb_recommends_openvino(self):
-        """無 GPU、RAM=6144MB（恰好6GB）→ qwen3-openvino + 0.6b。"""
+    def test_cpu_only_ram_exactly_6gb_recommends_onnx(self):
+        """無 GPU、RAM=6144MB（恰好6GB）→ qwen3-onnx + 0.6b。"""
         caps = self._make_caps(gpu_vendor=None, gpu_vram_mb=0, total_ram_mb=6144)
         path = recommend_inference_path(caps)
-        self.assertEqual(path.engine, "qwen3-openvino")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
     def test_cpu_only_ram_below_6gb_recommends_sherpa(self):
@@ -254,16 +254,16 @@ class TestInferencePathRecommendation(unittest.TestCase):
         self.assertEqual(path.model, "qwen3-asr-1.7b")
 
     def test_spec_scenario_cpu_8gb_ram(self):
-        """Spec §推理路徑建議：無 GPU + 8GB RAM → qwen3-openvino + 0.6b。"""
+        """Spec §推理路徑建議：無 GPU + 8GB RAM → qwen3-onnx + 0.6b。"""
         caps = self._make_caps(gpu_vendor=None, gpu_vram_mb=0, total_ram_mb=8192)
         path = recommend_inference_path(caps)
-        self.assertEqual(path.engine, "qwen3-openvino")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
     def test_inference_path_dataclass(self):
         """InferencePath dataclass 應包含 engine 和 model 欄位。"""
-        path = InferencePath(engine="qwen3-openvino", model="qwen3-asr-0.6b")
-        self.assertEqual(path.engine, "qwen3-openvino")
+        path = InferencePath(engine="qwen3-onnx", model="qwen3-asr-0.6b")
+        self.assertEqual(path.engine, "qwen3-onnx")
         self.assertEqual(path.model, "qwen3-asr-0.6b")
 
 
@@ -487,6 +487,93 @@ class TestRamDetectionFallbackWarning(unittest.TestCase):
 
         self.assertEqual(ram_mb, 4096)
         self.assertTrue(any("RAM" in msg for msg in log.output))
+
+
+# ---------------------------------------------------------------------------
+# 5.3 Apple Silicon Detection 與 MLX 推理路徑建議
+# ---------------------------------------------------------------------------
+
+
+class TestAppleSiliconDetection(unittest.TestCase):
+    """Apple Silicon Detection spec 情境。"""
+
+    def test_apple_silicon_detected_on_macos_arm64(self):
+        """macOS ARM64 環境 is_apple_silicon 應為 True。"""
+        caps = SystemCapabilities(
+            cpu_type="arm64",
+            total_ram_mb=16384,
+            available_disk_mb=102400,
+            is_apple_silicon=True,
+        )
+        self.assertTrue(caps.is_apple_silicon)
+
+    def test_apple_silicon_false_on_windows_x86(self):
+        """Windows x86_64 環境 is_apple_silicon 應為 False。"""
+        caps = SystemCapabilities(
+            cpu_type="x86_64",
+            total_ram_mb=16384,
+            available_disk_mb=102400,
+            is_apple_silicon=False,
+        )
+        self.assertFalse(caps.is_apple_silicon)
+
+    def test_assess_sets_apple_silicon_on_darwin_arm64(self):
+        """assess() 在 darwin + arm64 環境應設定 is_apple_silicon=True。"""
+        with patch("subprocess.run", side_effect=FileNotFoundError()):
+            with patch("sys.platform", "darwin"):
+                with patch("platform.machine", return_value="arm64"):
+                    detector = HardwareDetector()
+                    caps = detector.assess()
+        self.assertTrue(caps.is_apple_silicon)
+
+    def test_assess_sets_apple_silicon_false_on_win32(self):
+        """assess() 在 win32 環境應設定 is_apple_silicon=False。"""
+        with patch("subprocess.run", side_effect=FileNotFoundError()):
+            with patch("sys.platform", "win32"):
+                with patch("platform.machine", return_value="AMD64"):
+                    detector = HardwareDetector()
+                    caps = detector.assess()
+        self.assertFalse(caps.is_apple_silicon)
+
+
+class TestAppleSiliconInferencePath(unittest.TestCase):
+    """Apple Silicon 推理路徑建議。"""
+
+    def test_apple_silicon_recommends_mlx(self):
+        """Apple Silicon 環境應推薦 qwen3-mlx + qwen3-asr-0.6b。"""
+        caps = SystemCapabilities(
+            cpu_type="arm64",
+            total_ram_mb=16384,
+            available_disk_mb=102400,
+            is_apple_silicon=True,
+        )
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "qwen3-mlx")
+        self.assertEqual(path.model, "qwen3-asr-0.6b")
+
+    def test_apple_silicon_takes_priority_over_cpu_fallback(self):
+        """Apple Silicon 分支應優先於 CPU fallback（即使 RAM≥6GB）。"""
+        caps = SystemCapabilities(
+            gpu_vendor=None,
+            cpu_type="arm64",
+            total_ram_mb=8192,
+            available_disk_mb=102400,
+            is_apple_silicon=True,
+        )
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "qwen3-mlx")
+
+    def test_non_apple_silicon_falls_through(self):
+        """非 Apple Silicon 環境應沿用原有決策樹。"""
+        caps = SystemCapabilities(
+            gpu_vendor=None,
+            cpu_type="x86_64",
+            total_ram_mb=8192,
+            available_disk_mb=102400,
+            is_apple_silicon=False,
+        )
+        path = recommend_inference_path(caps)
+        self.assertEqual(path.engine, "qwen3-onnx")
 
 
 if __name__ == "__main__":

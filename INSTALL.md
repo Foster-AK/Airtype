@@ -50,10 +50,11 @@ pip install -e ".[dev]"
 
 | 引擎 | 安裝指令 | 說明 |
 |------|---------|------|
-| OpenVINO | `pip install -e ".[openvino]"` | Qwen3-ASR CPU 推理 |
 | Breeze-ASR | `pip install -e ".[breeze]"` | faster-whisper + transformers |
 | sherpa-onnx | `pip install -e ".[sherpa]"` | SenseVoice / Paraformer 輕量推理 |
 | LLM 潤飾 | `pip install -e ".[llm]"` | llama-cpp-python 本機 LLM |
+
+> **注意**：核心 ASR 引擎（Qwen3-ASR ONNX）已包含在基本安裝中，不需額外安裝。
 
 #### llama-cpp-python GPU 加速（可選）
 
@@ -84,9 +85,12 @@ python -m airtype
 ### 共通前置作業
 
 ```bash
-pip install --upgrade pyinstaller
-pip install -e ".[full]"
+pip install -e ".[packaging]"
 ```
+
+> **重要**：打包時**不要**使用 `pip install -e ".[full]"`！`[full]` 會安裝 PyTorch、transformers 等巨型套件，
+> 導致打包體積膨脹至 2GB+。`[packaging]` 只安裝核心功能 + tokenizers + PyInstaller，
+> 打包體積約 250-350MB。建議使用建置腳本（會自動建立乾淨 venv）。
 
 ### Windows
 
@@ -145,8 +149,8 @@ bash build/build_linux.sh
 
 | 模型 | 大小 | 推理引擎 | 說明 |
 |------|------|---------|------|
-| Qwen3-ASR 1.7B OpenVINO INT8 | 3.6 GB | OpenVINO CPU | 高品質，CPU 首選 |
-| Qwen3-ASR 0.6B OpenVINO INT8 | 1.2 GB | OpenVINO CPU | 輕量快速 |
+| Qwen3-ASR 1.7B ONNX INT8 | 3.6 GB | ONNX Runtime CPU | 高品質，CPU 首選 |
+| Qwen3-ASR 0.6B ONNX INT8 | 1.2 GB | ONNX Runtime CPU | 輕量快速 |
 | SenseVoice Small | 900 MB | sherpa-onnx | 多語言輕量模型 |
 | Breeze-ASR-25 | 3.1 GB | faster-whisper | 繁中專精 |
 
@@ -180,7 +184,11 @@ bash build/build_linux.sh
 
 **Q：`pyinstaller airtype.spec` 報錯找不到模組？**
 
-確認已安裝完整依賴：`pip install -e ".[full]"`。若只需核心功能，至少需要 `pip install -e .`。
+確認已安裝打包依賴：`pip install -e ".[packaging]"`。若需要額外引擎（如 Breeze-ASR），可額外安裝對應 extras。
+
+**Q：打包後體積多大？**
+
+使用建置腳本（乾淨 venv + `[packaging]`）打包，約 250-350MB（不含模型）。若使用 `[full]` 安裝後打包，會因為 PyTorch、transformers 等巨型套件膨脹至 2GB+。建置腳本會自動建立乾淨 venv 避免此問題。
 
 ### 執行與設定
 

@@ -13,26 +13,29 @@ dependencies = [
     "numpy>=1.26",
     "onnxruntime>=1.17",
     "psutil>=5.9",
-    "pynput>=1.7",
+    "pynput>=1.7.7",
     "pyperclip>=1.8",
     "pyautogui>=0.9.54",
     "PySide6>=6.6",
     "keyring>=24.0",
+    "httpx>=0.27",
 ]
 
 [project.optional-dependencies]
-openvino = ["openvino>=2024.0"]
 breeze = [
     "faster-whisper>=1.0",
     "transformers>=4.40",
 ]
 sherpa = ["sherpa-onnx>=1.9"]
+mlx = [
+    "mlx>=0.18.0",
+    "mlx-qwen3-asr>=0.1.0",
+]
 llm = [
     "llama-cpp-python>=0.2.90",
     "httpx>=0.27",
 ]
 full = [
-    "openvino>=2024.0",
     "tokenizers>=0.15",
     "tiktoken>=0.6",
     "faster-whisper>=1.0",
@@ -40,6 +43,10 @@ full = [
     "sherpa-onnx>=1.9",
     "llama-cpp-python>=0.2.90",
     "httpx>=0.27",
+]
+packaging = [
+    "tokenizers>=0.15",
+    "pyinstaller>=6.0",
 ]
 dev = [
     "pytest>=8.0",

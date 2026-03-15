@@ -99,8 +99,16 @@ if _PYSIDE6_AVAILABLE:
                     sd.sleep(int(self._DURATION_S * 1000))
 
                 # 播放錄音
+                # 查詢輸出裝置的聲道數，避免 macOS 要求 ≥2 聲道的錯誤
                 if recorded:
                     audio = np.concatenate(recorded)
+                    try:
+                        out_info = sd.query_devices(device_arg, kind="output")
+                        out_channels = max(1, int(out_info.get("max_output_channels", 1)))
+                    except Exception:
+                        out_channels = 2
+                    if out_channels > 1:
+                        audio = np.column_stack([audio] * out_channels)
                     sd.play(audio, samplerate=self._SAMPLERATE, device=device_arg)
                     sd.wait()
 

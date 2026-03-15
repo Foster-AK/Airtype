@@ -891,7 +891,7 @@ class TestListModelsByCategory(unittest.TestCase):
                     "size_bytes": 100,
                     "category": "asr",
                     "description": "ASR Model 1",
-                    "inference_engine": "qwen3-openvino",
+                    "inference_engine": "qwen3-onnx",
                     "has_thinking_mode": False,
                     "thinking_disable_token": None,
                     "urls": ["https://example.com/asr1.bin"],

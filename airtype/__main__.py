@@ -60,12 +60,13 @@ def _acquire_instance_lock(
 
 # manifest inference_engine → 引擎模組映射
 _ENGINE_MODULE_MAP: dict[str, str] = {
-    "qwen3-openvino": "airtype.core.asr_qwen_openvino",
+    "qwen3-onnx": "airtype.core.asr_qwen_onnx",
     "qwen3-pytorch-cuda": "airtype.core.asr_qwen_pytorch",
     "chatllm-vulkan": "airtype.core.asr_qwen_vulkan",
     "sherpa-onnx": "airtype.core.asr_sherpa",
     "faster-whisper": "airtype.core.asr_breeze",
     "breeze-asr-25": "airtype.core.asr_breeze",
+    "qwen3-mlx": "airtype.core.asr_qwen_mlx",
 }
 
 # 全部引擎模組（後備，manifest 讀取失敗時使用）
@@ -336,6 +337,20 @@ def main() -> None:
     # ── 啟動控制器 ─────────────────────────────────────────────────────
     controller.startup()
     logger.info("Airtype 啟動完成")
+
+    # ── 5.4 ASR 引擎缺失警告（延遲至事件迴圈啟動後顯示） ──────────────
+    if asr_engine is None:
+        def _warn_no_asr_engine():
+            from PySide6.QtWidgets import QMessageBox
+            msg = QMessageBox()
+            msg.setWindowTitle("Airtype — 未載入 ASR 模型")
+            msg.setIcon(QMessageBox.Icon.Warning)
+            msg.setText(
+                "尚未下載任何 ASR 語音辨識模型，語音輸入功能將無法使用。\n\n"
+                "請前往「設定 → 模型管理」下載模型後重新啟動 Airtype。"
+            )
+            msg.exec()
+        QTimer.singleShot(500, _warn_no_asr_engine)
 
     # ── Qt 事件迴圈 ────────────────────────────────────────────────────
     exit_code = app.exec()

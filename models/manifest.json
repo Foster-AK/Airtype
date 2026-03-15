@@ -3,35 +3,35 @@
   "_version": "2.0.0",
   "models": [
     {
-      "id": "qwen3-asr-1.7b-openvino",
-      "filename": "qwen3-asr-1.7b-openvino-int8.zip",
-      "size_bytes": 3600000000,
-      "description": "Qwen3-ASR 1.7B OpenVINO INT8（CPU 高品質路徑，由 dseditor 提供量化版）",
-      "inference_engine": "qwen3-openvino",
+      "id": "qwen3-asr-0.6b-onnx",
+      "filename": "qwen3-asr-0.6b-onnx-int8.zip",
+      "size_bytes": 1200000000,
+      "description": "Qwen3-ASR 0.6B ONNX INT8（跨平台 CPU 輕量路徑）",
+      "inference_engine": "qwen3-onnx",
       "category": "asr",
       "has_thinking_mode": false,
       "thinking_disable_token": null,
       "urls": [
-        "https://huggingface.co/dseditor/Qwen3-ASR-1.7B-INT8_OpenVINO"
+        "https://huggingface.co/andrewleech/qwen3-asr-0.6b-onnx"
       ],
       "fallback_urls": [],
       "sha256": ""
     },
     {
-      "id": "qwen3-asr-0.6b-openvino",
-      "filename": "qwen3-asr-0.6b-openvino-int8.zip",
+      "id": "qwen3-asr-0.6b-mlx",
+      "filename": "qwen3-asr-0.6b-mlx",
       "size_bytes": 1200000000,
-      "description": "Qwen3-ASR 0.6B OpenVINO INT8_ASYM（CPU 輕量路徑，由 dseditor 提供量化版）",
-      "inference_engine": "qwen3-openvino",
+      "description": "Qwen3-ASR 0.6B MLX（macOS Apple Silicon 專用）",
+      "inference_engine": "qwen3-mlx",
       "category": "asr",
       "has_thinking_mode": false,
       "thinking_disable_token": null,
+      "model_id": "Qwen/Qwen3-ASR-0.6B",
+      "hf_repo": "Qwen/Qwen3-ASR-0.6B",
       "urls": [
-        "https://huggingface.co/dseditor/Qwen3-ASR-0.6B-INT8_ASYM-OpenVINO"
+        "https://huggingface.co/Qwen/Qwen3-ASR-0.6B"
       ],
-      "fallback_urls": [
-        "https://huggingface.co/Echo9Zulu/Qwen3-ASR-0.6B-INT8_ASYM-OpenVINO"
-      ],
+      "fallback_urls": [],
       "sha256": ""
     },
     {

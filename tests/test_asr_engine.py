@@ -215,12 +215,12 @@ def test_manifest_resolves_to_correct_engine(registry):
     """manifest 的 inference_engine 應決定使用哪個引擎。
 
     模型 qwen3-asr-0.6b 在 manifest 中的 inference_engine 是 chatllm-vulkan，
-    經別名轉換後應解析為 qwen3-vulkan。即使 qwen3-openvino 也已登錄，
+    經別名轉換後應解析為 qwen3-vulkan。即使 qwen3-onnx 也已登錄，
     仍應優先選擇 manifest 指定的引擎。
     """
     from airtype.core.asr_engine import ASREngineRegistry
 
-    registry.register_engine("qwen3-openvino", MockASREngine)
+    registry.register_engine("qwen3-onnx", MockASREngine)
     registry.register_engine("qwen3-vulkan", MockASREngine)
     cfg = MagicMock()
     cfg.voice.asr_model = "qwen3-asr-0.6b"
@@ -240,7 +240,7 @@ def test_manifest_engine_not_registered_falls_to_family_map(registry):
     """
     from airtype.core.asr_engine import ASREngineRegistry
 
-    registry.register_engine("qwen3-openvino", MockASREngine)
+    registry.register_engine("qwen3-onnx", MockASREngine)
     cfg = MagicMock()
     cfg.voice.asr_model = "qwen3-asr-0.6b"
     cfg.voice.asr_inference_backend = "auto"
@@ -249,8 +249,8 @@ def test_manifest_engine_not_registered_falls_to_family_map(registry):
         ASREngineRegistry, "_resolve_engine_from_manifest", return_value="qwen3-vulkan"
     ):
         registry.load_default_engine(cfg)
-    # fallback 到 _MODEL_ENGINE_MAP，qwen3-openvino 排第一且已登錄
-    assert registry.active_engine_id == "qwen3-openvino"
+    # fallback 到 _MODEL_ENGINE_MAP，qwen3-onnx 排第一且已登錄
+    assert registry.active_engine_id == "qwen3-onnx"
 
 
 def test_model_name_resolves_via_specific_backend(registry):
@@ -260,19 +260,19 @@ def test_model_name_resolves_via_specific_backend(registry):
     """
     from airtype.core.asr_engine import ASREngineRegistry
 
-    registry.register_engine("qwen3-openvino", MockASREngine)
+    registry.register_engine("qwen3-onnx", MockASREngine)
     registry.register_engine("qwen3-vulkan", MockASREngine)
     cfg = MagicMock()
     cfg.voice.asr_model = "qwen3-asr-0.6b"
-    cfg.voice.asr_inference_backend = "openvino"
+    cfg.voice.asr_inference_backend = "onnx"
     # manifest 解析為 vulkan，但已登錄所以會在階段 2 選中。
-    # 不過 backend=openvino 時使用者意圖明確，需 manifest 未登錄才到階段 3。
+    # 不過 backend=onnx 時使用者意圖明確，需 manifest 未登錄才到階段 3。
     # 這裡模擬 manifest 無結果的情境以測試家族映射。
     with patch.object(
         ASREngineRegistry, "_resolve_engine_from_manifest", return_value=None
     ):
         registry.load_default_engine(cfg)
-    assert registry.active_engine_id == "qwen3-openvino"
+    assert registry.active_engine_id == "qwen3-onnx"
 
 
 def test_direct_engine_id_still_works(registry):
@@ -333,15 +333,15 @@ def test_resolve_engine_from_manifest_with_alias():
     manifest_data = json.dumps({
         "models": [
             {"id": "qwen3-asr-0.6b", "inference_engine": "chatllm-vulkan"},
-            {"id": "qwen3-asr-0.6b-openvino", "inference_engine": "qwen3-openvino"},
+            {"id": "qwen3-asr-0.6b-onnx", "inference_engine": "qwen3-onnx"},
         ]
     })
     with patch("airtype.core.asr_engine._MANIFEST_PATH") as mock_path:
         mock_path.open = mock_open(read_data=manifest_data)
         # chatllm-vulkan 應別名為 qwen3-vulkan
         assert ASREngineRegistry._resolve_engine_from_manifest("qwen3-asr-0.6b") == "qwen3-vulkan"
-        # qwen3-openvino 無需別名
-        assert ASREngineRegistry._resolve_engine_from_manifest("qwen3-asr-0.6b-openvino") == "qwen3-openvino"
+        # qwen3-onnx 無需別名
+        assert ASREngineRegistry._resolve_engine_from_manifest("qwen3-asr-0.6b-onnx") == "qwen3-onnx"
         # 不存在的模型
         assert ASREngineRegistry._resolve_engine_from_manifest("nonexistent") is None
 
@@ -478,11 +478,11 @@ def test_on_engine_changed_none_no_error(registry):
     registry.set_active_engine("mock")
 
 
-def test_qwen_openvino_no_hot_words():
-    """QwenOpenVinoEngine.supports_hot_words 應回傳 False。"""
-    from airtype.core.asr_qwen_openvino import QwenOpenVinoEngine
+def test_qwen_onnx_no_hot_words():
+    """QwenOnnxEngine.supports_hot_words 應回傳 False。"""
+    from airtype.core.asr_qwen_onnx import QwenOnnxEngine
 
-    assert QwenOpenVinoEngine().supports_hot_words is False
+    assert QwenOnnxEngine().supports_hot_words is False
 
 
 def test_qwen_pytorch_no_hot_words():
@@ -504,3 +504,47 @@ def test_breeze_no_hot_words():
     from airtype.core.asr_breeze import BreezeAsrEngine
 
     assert BreezeAsrEngine().supports_hot_words is False
+
+
+# ---------------------------------------------------------------------------
+# 5.2 MLX 引擎在 _MODEL_ENGINE_MAP 中的解析測試
+# ---------------------------------------------------------------------------
+
+
+def test_model_engine_map_contains_qwen3_mlx():
+    """_MODEL_ENGINE_MAP 的 qwen3-asr-0.6b 候選清單應包含 qwen3-mlx。"""
+    from airtype.core.asr_engine import _MODEL_ENGINE_MAP
+
+    candidates = _MODEL_ENGINE_MAP.get("qwen3-asr-0.6b", [])
+    assert "qwen3-mlx" in candidates
+
+
+def test_model_name_resolves_via_mlx_backend(registry):
+    """asr_inference_backend="mlx" 時應解析到 qwen3-mlx。"""
+    from airtype.core.asr_engine import ASREngineRegistry
+
+    registry.register_engine("qwen3-onnx", MockASREngine)
+    registry.register_engine("qwen3-mlx", MockASREngine)
+    cfg = MagicMock()
+    cfg.voice.asr_model = "qwen3-asr-0.6b"
+    cfg.voice.asr_inference_backend = "mlx"
+    with patch.object(
+        ASREngineRegistry, "_resolve_engine_from_manifest", return_value=None
+    ):
+        registry.load_default_engine(cfg)
+    assert registry.active_engine_id == "qwen3-mlx"
+
+
+def test_model_name_auto_resolves_to_mlx_when_only_mlx_registered(registry):
+    """auto 模式下若僅 qwen3-mlx 可用應選中。"""
+    from airtype.core.asr_engine import ASREngineRegistry
+
+    registry.register_engine("qwen3-mlx", MockASREngine)
+    cfg = MagicMock()
+    cfg.voice.asr_model = "qwen3-asr-0.6b"
+    cfg.voice.asr_inference_backend = "auto"
+    with patch.object(
+        ASREngineRegistry, "_resolve_engine_from_manifest", return_value=None
+    ):
+        registry.load_default_engine(cfg)
+    assert registry.active_engine_id == "qwen3-mlx"

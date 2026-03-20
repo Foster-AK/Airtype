@@ -10,11 +10,23 @@ TBD - created by archiving change '23-main-wiring'. Update Purpose after archive
 
 The application entry point (`__main__.py`) SHALL create and connect all core components in the following order: i18n initialization, AudioCaptureService, VadEngine, ASREngineRegistry (with engine registration), FocusManager, TextInjector, DictionaryEngine, PolishEngine, BatchRecognitionPipeline, HotkeyManager, CoreController (with all dependencies injected), and UI components (CapsuleOverlay, SettingsWindow, SystemTrayIcon). After DictionaryEngine is successfully initialized and an ASR engine is loaded, the entry point SHALL call `dictionary_engine.sync_hot_words(asr_engine)` to inject active hot words into the ASR engine.
 
+The engine module list (`_ENGINE_MODULE_MAP`) SHALL include `"airtype.core.asr_qwen_mlx"` as a candidate module for MLX-based Qwen3-ASR inference on macOS Apple Silicon.
+
 #### Scenario: Full Component Chain Initialization
 
 - **WHEN** the application starts via `python -m airtype`
 - **THEN** all core components SHALL be created and connected in dependency order
 - **THEN** CoreController SHALL receive pipeline, text_injector, polish_engine, and dictionary_engine parameters
+
+#### Scenario: MLX Engine Module Loaded on macOS
+
+- **WHEN** the application starts on macOS Apple Silicon with `mlx` installed
+- **THEN** `airtype.core.asr_qwen_mlx` SHALL be imported and `register()` SHALL add `"qwen3-mlx"` to the registry
+
+#### Scenario: MLX Engine Module Skipped on Non-macOS
+
+- **WHEN** the application starts on Windows or Linux
+- **THEN** `airtype.core.asr_qwen_mlx` import SHALL fail gracefully and log a debug message
 
 #### Scenario: Application Starts Without Crash
 
@@ -29,31 +41,15 @@ The application entry point (`__main__.py`) SHALL create and connect all core co
 
 #### Scenario: Hot Words Skipped When No ASR Engine
 
-- **WHEN** the application starts but no ASR engine is available (asr_engine is None)
-- **THEN** `sync_hot_words()` SHALL NOT be called
-- **THEN** no error SHALL be raised
+- **WHEN** the application starts but no ASR engine is available
+- **THEN** hot word synchronization SHALL be skipped without error
 
 
 <!-- @trace
-source: fix-hot-words
-updated: 2026-03-07
+source: asr-qwen-mlx
+updated: 2026-03-20
 code:
-  - airtype/core/asr_breeze.py
-  - airtype/ui/settings_window.py
-  - airtype/core/asr_qwen_pytorch.py
-  - airtype/core/asr_qwen_openvino.py
-  - airtype/__main__.py
-  - locales/zh_TW.json
-  - locales/zh_CN.json
-  - airtype/ui/settings_dictionary.py
-  - locales/en.json
-  - airtype/core/asr_qwen_vulkan.py
-  - airtype/core/asr_engine.py
-  - locales/ja.json
-  - airtype/core/asr_sherpa.py
-tests:
-  - tests/test_asr_sherpa.py
-  - tests/test_asr_engine.py
+  - CLAUDE.md
 -->
 
 ---

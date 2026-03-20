@@ -261,3 +261,157 @@ def test_resource_cleanup_audio_capture_stopped():
     mocks = _make_new_mocks()
     _call_main_new(mocks)
     mocks["audio"].stop.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# model_integrity_msg 對話框分支測試
+# ---------------------------------------------------------------------------
+
+
+def _call_main_with_integrity(mocks, validate_return):
+    """執行 main()，並用 validate_return 覆寫 validate_model_files 回傳值。
+
+    回傳 (mock_ctrl_cls, qtimer_mock)。
+    """
+    mock_mm = MagicMock()
+    mock_mm.is_downloaded.return_value = True
+    mock_mm.validate_model_files.return_value = validate_return
+
+    # 讓 asr_engine 為 None，才會觸發對話框路徑
+    mocks["registry"].active_engine = None
+
+    with ExitStack() as stack:
+        stack.enter_context(patch("airtype.config.AirtypeConfig.load", return_value=mocks["cfg"]))
+        stack.enter_context(patch("airtype.__main__.setup_logging"))
+        stack.enter_context(patch("airtype.__main__._acquire_instance_lock", return_value=MagicMock()))
+        stack.enter_context(patch("airtype.utils.i18n.set_language"))
+        stack.enter_context(patch("PySide6.QtWidgets.QApplication", return_value=mocks["app"]))
+        stack.enter_context(patch("PySide6.QtGui.QIcon"))
+        mock_qtimer = MagicMock()
+        stack.enter_context(patch("PySide6.QtCore.QTimer", mock_qtimer))
+        stack.enter_context(patch("airtype.core.audio_capture.AudioCaptureService", return_value=mocks["audio"]))
+        stack.enter_context(patch("airtype.core.vad.VadEngine", return_value=mocks["vad"]))
+        stack.enter_context(patch("airtype.core.asr_engine.ASREngineRegistry", return_value=mocks["registry"]))
+        stack.enter_context(patch("airtype.core.hotkey.FocusManager", return_value=mocks["focus_mgr"]))
+        stack.enter_context(patch("airtype.core.text_injector.TextInjector", return_value=mocks["injector"]))
+        stack.enter_context(patch("airtype.core.dictionary.DictionaryEngine", return_value=mocks["dict_engine"]))
+        stack.enter_context(patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=mocks["pipeline"]))
+        stack.enter_context(patch("airtype.core.controller.CoreController", return_value=mocks["ctrl"]))
+        stack.enter_context(patch("airtype.core.controller.init_controller"))
+        stack.enter_context(patch("airtype.core.hotkey.HotkeyManager", return_value=mocks["hkm"]))
+        stack.enter_context(patch("airtype.ui.overlay.CapsuleOverlay", return_value=mocks["overlay"]))
+        stack.enter_context(patch("airtype.ui.settings_window.SettingsWindow", return_value=mocks["sw"]))
+        stack.enter_context(patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mocks["tray"]))
+        stack.enter_context(patch("airtype.__main__.importlib"))
+        stack.enter_context(patch("airtype.utils.model_manager.ModelManager", return_value=mock_mm))
+        stack.enter_context(patch("sys.exit"))
+
+        from airtype.__main__ import main
+        main()
+
+    return mock_qtimer
+
+
+def test_asr_warning_dialog_shows_missing_files():
+    """asr_engine=None 且 validate 偵測 missing 時，QTimer.singleShot 應被呼叫（對話框觸發）。"""
+    mocks = _make_new_mocks()
+    mock_qtimer = _call_main_with_integrity(
+        mocks,
+        validate_return=(False, ["encoder.onnx OR encoder.int8.onnx"], []),
+    )
+    mock_qtimer.singleShot.assert_called_once()
+    # 確認 callback 函式存在
+    callback = mock_qtimer.singleShot.call_args[0][1]
+    assert callable(callback)
+
+
+def test_asr_warning_dialog_shows_tmp_incomplete():
+    """asr_engine=None 且 validate 偵測 .tmp 時，QTimer.singleShot 應被呼叫（對話框觸發）。"""
+    mocks = _make_new_mocks()
+    mock_qtimer = _call_main_with_integrity(
+        mocks,
+        validate_return=(False, [], ["encoder.onnx.tmp"]),
+    )
+    mock_qtimer.singleShot.assert_called_once()
+
+
+def test_asr_warning_dialog_missing_files_message_content():
+    """missing 場景的 callback 內容應包含缺少的檔案名稱。"""
+    mocks = _make_new_mocks()
+    missing_entry = "encoder.onnx OR encoder.int8.onnx"
+    mock_qtimer = _call_main_with_integrity(
+        mocks,
+        validate_return=(False, [missing_entry], []),
+    )
+    callback = mock_qtimer.singleShot.call_args[0][1]
+
+    mock_msgbox = MagicMock()
+    with patch("PySide6.QtWidgets.QMessageBox", return_value=mock_msgbox):
+        callback()
+
+    set_text_call = mock_msgbox.setText.call_args[0][0]
+    assert "encoder.onnx OR encoder.int8.onnx" in set_text_call
+    assert "不完整" in set_text_call
+
+
+def test_asr_warning_dialog_tmp_message_content():
+    """.tmp 場景的 callback 應顯示「下載未完成」訊息。"""
+    mocks = _make_new_mocks()
+    mock_qtimer = _call_main_with_integrity(
+        mocks,
+        validate_return=(False, [], ["model.onnx.tmp"]),
+    )
+    callback = mock_qtimer.singleShot.call_args[0][1]
+
+    mock_msgbox = MagicMock()
+    with patch("PySide6.QtWidgets.QMessageBox", return_value=mock_msgbox):
+        callback()
+
+    set_text_call = mock_msgbox.setText.call_args[0][0]
+    assert "下載未完成" in set_text_call
+
+
+def test_asr_warning_dialog_no_model_downloaded():
+    """模型未下載時，callback 應顯示「尚未下載」訊息。"""
+    mocks = _make_new_mocks()
+    mocks["registry"].active_engine = None
+
+    mock_mm = MagicMock()
+    mock_mm.is_downloaded.return_value = False  # 未下載
+
+    with ExitStack() as stack:
+        stack.enter_context(patch("airtype.config.AirtypeConfig.load", return_value=mocks["cfg"]))
+        stack.enter_context(patch("airtype.__main__.setup_logging"))
+        stack.enter_context(patch("airtype.__main__._acquire_instance_lock", return_value=MagicMock()))
+        stack.enter_context(patch("airtype.utils.i18n.set_language"))
+        stack.enter_context(patch("PySide6.QtWidgets.QApplication", return_value=mocks["app"]))
+        stack.enter_context(patch("PySide6.QtGui.QIcon"))
+        mock_qtimer = MagicMock()
+        stack.enter_context(patch("PySide6.QtCore.QTimer", mock_qtimer))
+        stack.enter_context(patch("airtype.core.audio_capture.AudioCaptureService", return_value=mocks["audio"]))
+        stack.enter_context(patch("airtype.core.vad.VadEngine", return_value=mocks["vad"]))
+        stack.enter_context(patch("airtype.core.asr_engine.ASREngineRegistry", return_value=mocks["registry"]))
+        stack.enter_context(patch("airtype.core.hotkey.FocusManager", return_value=mocks["focus_mgr"]))
+        stack.enter_context(patch("airtype.core.text_injector.TextInjector", return_value=mocks["injector"]))
+        stack.enter_context(patch("airtype.core.dictionary.DictionaryEngine", return_value=mocks["dict_engine"]))
+        stack.enter_context(patch("airtype.core.pipeline.BatchRecognitionPipeline", return_value=mocks["pipeline"]))
+        stack.enter_context(patch("airtype.core.controller.CoreController", return_value=mocks["ctrl"]))
+        stack.enter_context(patch("airtype.core.controller.init_controller"))
+        stack.enter_context(patch("airtype.core.hotkey.HotkeyManager", return_value=mocks["hkm"]))
+        stack.enter_context(patch("airtype.ui.overlay.CapsuleOverlay", return_value=mocks["overlay"]))
+        stack.enter_context(patch("airtype.ui.settings_window.SettingsWindow", return_value=mocks["sw"]))
+        stack.enter_context(patch("airtype.ui.tray_icon.SystemTrayIcon", return_value=mocks["tray"]))
+        stack.enter_context(patch("airtype.__main__.importlib"))
+        stack.enter_context(patch("airtype.utils.model_manager.ModelManager", return_value=mock_mm))
+        stack.enter_context(patch("sys.exit"))
+
+        from airtype.__main__ import main
+        main()
+
+    callback = mock_qtimer.singleShot.call_args[0][1]
+    mock_msgbox = MagicMock()
+    with patch("PySide6.QtWidgets.QMessageBox", return_value=mock_msgbox):
+        callback()
+
+    set_text_call = mock_msgbox.setText.call_args[0][0]
+    assert "尚未下載" in set_text_call

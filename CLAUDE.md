@@ -1,5 +1,5 @@
 - 所有回應、思考過程、規格、文件、程式碼註解都使用繁體中文
-<!-- SPECTRA:START v1.0.0 -->
+<!-- SPECTRA:START v1.0.1 -->
 
 # Spectra Instructions
 
@@ -20,5 +20,9 @@ discuss? → propose → apply ⇄ ingest → archive
 
 - `discuss` is optional — skip if requirements are clear
 - Requirements change mid-work? Plan mode → `ingest` → resume `apply`
+
+## Parked Changes
+
+Changes can be parked（暫存）— temporarily moved out of `openspec/changes/`. Parked changes won't appear in `spectra list` but can be found with `spectra list --parked`. To restore: `spectra unpark <name>`. The `/spectra:apply` and `/spectra:ingest` skills handle parked changes automatically.
 
 <!-- SPECTRA:END -->

@@ -39,6 +39,16 @@ a = Analysis(
         # ── 標準庫中被動態使用的模組 ──
         "json",
         "logging",
+        # ── ASR 引擎模組（透過 importlib.import_module() 動態載入，PyInstaller 無法自動追蹤）──
+        "airtype.core.asr_engine",
+        "airtype.core.asr_utils",
+        "airtype.core.asr_qwen_onnx",
+        "airtype.core.asr_qwen_pytorch",
+        "airtype.core.asr_qwen_vulkan",
+        "airtype.core.asr_qwen_mlx",
+        "airtype.core.asr_sherpa",
+        "airtype.core.asr_breeze",
+        "airtype.core.processor_numpy",
     ],
     hookspath=[],
     hooksconfig={},
@@ -140,3 +150,12 @@ coll = COLLECT(
     upx_exclude=[],
     name="airtype",
 )
+
+# ── macOS .app bundle ──
+if _sys.platform == "darwin":
+    app = BUNDLE(
+        coll,
+        name="Airtype.app",
+        icon="resources/icons/airtype1024.icns",
+        bundle_identifier="app.airtype.airtype",
+    )

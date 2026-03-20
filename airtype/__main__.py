@@ -188,15 +188,69 @@ def main() -> None:
             mod.register(asr_registry)
             logger.debug("ASR 引擎模組已載入：%s", module_path)
         except Exception as exc:
-            logger.debug("ASR 引擎模組略過：%s（%s）", module_path, exc)
+            logger.warning("ASR 引擎模組略過：%s（%s）", module_path, exc)
+
+    # ── 模型完整性預檢 ─────────────────────────────────────────────────
+    model_integrity_msg: str | None = None
+    try:
+        from airtype.utils.model_manager import ModelManager
+
+        _mm = ModelManager()
+        if _mm.is_downloaded(cfg.voice.asr_model):
+            # 嘗試從已載入的引擎模組取得 REQUIRED_FILES
+            _required_files: list[str] | None = None
+            for _mod_path in needed_modules:
+                try:
+                    _engine_mod = importlib.import_module(_mod_path)
+                    for _attr_name in dir(_engine_mod):
+                        _attr = getattr(_engine_mod, _attr_name)
+                        if (
+                            isinstance(_attr, type)
+                            and hasattr(_attr, "REQUIRED_FILES")
+                            and hasattr(_attr, "ENGINE_ID")
+                        ):
+                            _required_files = getattr(_attr, "REQUIRED_FILES", None)
+                            break
+                    if _required_files is not None:
+                        break
+                except Exception:
+                    pass
+
+            _valid, _missing, _tmp = _mm.validate_model_files(
+                cfg.voice.asr_model, _required_files
+            )
+            if not _valid:
+                if _missing:
+                    model_integrity_msg = "missing:" + ",".join(_missing)
+                    logger.warning(
+                        "模型 %s 缺少必要檔案：%s",
+                        cfg.voice.asr_model,
+                        _missing,
+                    )
+                if _tmp:
+                    if model_integrity_msg is None:
+                        model_integrity_msg = "tmp:" + ",".join(_tmp)
+                    logger.warning(
+                        "模型 %s 有未完成的下載檔案（.tmp）：%s",
+                        cfg.voice.asr_model,
+                        _tmp,
+                    )
+    except Exception as _exc:
+        logger.debug("模型完整性預檢失敗（非致命）：%s", _exc)
 
     try:
         asr_registry.load_default_engine(cfg)
-        logger.info("預設 ASR 引擎已載入")
     except Exception as exc:
         logger.warning("無法載入預設 ASR 引擎（未下載模型？）：%s", exc)
 
     asr_engine = asr_registry.active_engine
+    if asr_engine is not None:
+        logger.info("預設 ASR 引擎已載入：%s", asr_engine.ENGINE_ID)
+    else:
+        logger.warning(
+            "預設 ASR 引擎未載入，已登錄引擎：%s",
+            asr_registry.registered_ids,
+        )
 
     # ── 4.6 FocusManager 與 TextInjector ──────────────────────────────
     from airtype.core.hotkey import FocusManager
@@ -340,15 +394,30 @@ def main() -> None:
 
     # ── 5.4 ASR 引擎缺失警告（延遲至事件迴圈啟動後顯示） ──────────────
     if asr_engine is None:
+        _captured_integrity_msg = model_integrity_msg
+
         def _warn_no_asr_engine():
             from PySide6.QtWidgets import QMessageBox
             msg = QMessageBox()
             msg.setWindowTitle("Airtype — 未載入 ASR 模型")
             msg.setIcon(QMessageBox.Icon.Warning)
-            msg.setText(
-                "尚未下載任何 ASR 語音辨識模型，語音輸入功能將無法使用。\n\n"
-                "請前往「設定 → 模型管理」下載模型後重新啟動 Airtype。"
-            )
+            if _captured_integrity_msg and _captured_integrity_msg.startswith("missing:"):
+                missing_list = _captured_integrity_msg[len("missing:"):].replace(",", "\n  • ")
+                msg.setText(
+                    "ASR 模型檔案不完整，語音輸入功能將無法使用。\n\n"
+                    f"缺少的檔案：\n  • {missing_list}\n\n"
+                    "請前往「設定 → 模型管理」刪除並重新下載模型後重新啟動 Airtype。"
+                )
+            elif _captured_integrity_msg and _captured_integrity_msg.startswith("tmp:"):
+                msg.setText(
+                    "ASR 模型下載未完成，語音輸入功能將無法使用。\n\n"
+                    "請前往「設定 → 模型管理」刪除並重新下載模型後重新啟動 Airtype。"
+                )
+            else:
+                msg.setText(
+                    "尚未下載任何 ASR 語音辨識模型，語音輸入功能將無法使用。\n\n"
+                    "請前往「設定 → 模型管理」下載模型後重新啟動 Airtype。"
+                )
             msg.exec()
         QTimer.singleShot(500, _warn_no_asr_engine)
 

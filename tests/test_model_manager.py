@@ -1408,5 +1408,108 @@ class TestDownloadUrlAuthHeader(unittest.TestCase):
         self.assertNotIn("Authorization", headers_sent)
 
 
+# ---------------------------------------------------------------------------
+# validate_model_files 測試
+# ---------------------------------------------------------------------------
+
+
+class TestValidateModelFiles(unittest.TestCase):
+    """ModelManager.validate_model_files() 完整性驗證測試。"""
+
+    def _make_manager(self, files: list[str], model_filename: str = "mymodel.zip") -> tuple[ModelManager, str]:
+        """建立含指定檔案的模型目錄，回傳 (manager, model_id)。"""
+        tmp = tempfile.mkdtemp()
+        # zip 模型展開後的目錄名稱為 filename 去掉 .zip
+        model_dir = Path(tmp) / model_filename.removesuffix(".zip")
+        model_dir.mkdir()
+        for fname in files:
+            (model_dir / fname).touch()
+
+        manifest = {
+            "models": [
+                {
+                    "id": "test-model",
+                    "filename": model_filename,
+                    "size_bytes": 1,
+                    "urls": [],
+                    "fallback_urls": [],
+                    "sha256": "",
+                }
+            ]
+        }
+        manifest_path = Path(tmp) / "manifest.json"
+        manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+        manager = ModelManager(manifest_path=str(manifest_path), download_dir=tmp)
+        return manager, "test-model"
+
+    def test_all_required_files_present(self):
+        """所有必要檔案存在時回傳 (True, [], [])。"""
+        manager, model_id = self._make_manager(["encoder.onnx", "config.json"])
+        is_valid, missing, tmp_files = manager.validate_model_files(
+            model_id, required_files=["encoder.onnx", "config.json"]
+        )
+        self.assertTrue(is_valid)
+        self.assertEqual(missing, [])
+        self.assertEqual(tmp_files, [])
+
+    def test_missing_required_file(self):
+        """缺少必要檔案時 is_valid 為 False，missing 含缺少的檔案。"""
+        manager, model_id = self._make_manager(["config.json"])
+        is_valid, missing, tmp_files = manager.validate_model_files(
+            model_id, required_files=["encoder.onnx", "config.json"]
+        )
+        self.assertFalse(is_valid)
+        self.assertIn("encoder.onnx", missing)
+        self.assertNotIn("config.json", missing)
+
+    def test_or_syntax_satisfied(self):
+        """OR 語法：其中一個存在即通過。"""
+        manager, model_id = self._make_manager(["encoder.int8.onnx", "config.json"])
+        is_valid, missing, _ = manager.validate_model_files(
+            model_id,
+            required_files=["encoder.onnx OR encoder.int8.onnx", "config.json"],
+        )
+        self.assertTrue(is_valid)
+        self.assertEqual(missing, [])
+
+    def test_or_syntax_not_satisfied(self):
+        """OR 語法：兩個都不存在時，missing 含原始條目字串。"""
+        manager, model_id = self._make_manager(["config.json"])
+        is_valid, missing, _ = manager.validate_model_files(
+            model_id,
+            required_files=["encoder.onnx OR encoder.int8.onnx", "config.json"],
+        )
+        self.assertFalse(is_valid)
+        self.assertIn("encoder.onnx OR encoder.int8.onnx", missing)
+
+    def test_tmp_files_detected(self):
+        """.tmp 檔案存在時 is_valid 為 False，tmp_files 含其名稱。"""
+        manager, model_id = self._make_manager(
+            ["encoder.onnx", "config.json", "decoder.onnx.tmp"]
+        )
+        is_valid, missing, tmp_files = manager.validate_model_files(
+            model_id, required_files=["encoder.onnx", "config.json"]
+        )
+        self.assertFalse(is_valid)
+        self.assertIn("decoder.onnx.tmp", tmp_files)
+        self.assertEqual(missing, [])
+
+    def test_no_required_files_specified(self):
+        """required_files=None 時只偵測 .tmp 檔，無 .tmp 則回傳 (True, [], [])。"""
+        manager, model_id = self._make_manager(["encoder.onnx", "config.json"])
+        is_valid, missing, tmp_files = manager.validate_model_files(model_id, required_files=None)
+        self.assertTrue(is_valid)
+        self.assertEqual(missing, [])
+        self.assertEqual(tmp_files, [])
+
+    def test_no_required_files_with_tmp(self):
+        """required_files=None 但有 .tmp 檔時回傳 (False, [], [...])。"""
+        manager, model_id = self._make_manager(["file.tmp"])
+        is_valid, missing, tmp_files = manager.validate_model_files(model_id, required_files=None)
+        self.assertFalse(is_valid)
+        self.assertEqual(missing, [])
+        self.assertIn("file.tmp", tmp_files)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -299,6 +299,59 @@ class ModelManager:
             return dir_dest.is_dir()
         return False
 
+    def validate_model_files(
+        self,
+        model_id: str,
+        required_files: list[str] | None = None,
+    ) -> tuple[bool, list[str], list[str]]:
+        """驗證模型目錄中的必要檔案是否完整。
+
+        Args:
+            model_id: 模型 ID。
+            required_files: 必要檔案清單。支援 ``"A OR B"`` 語法（至少一個存在即通過）。
+                            若為 None，則只偵測 .tmp 檔案。
+
+        Returns:
+            ``(is_valid, missing_files, tmp_files)`` 三元組：
+            - ``is_valid``: True 表示所有必要檔案存在且無 .tmp 檔案。
+            - ``missing_files``: 缺少的必要檔案條目清單（含原始 "A OR B" 字串）。
+            - ``tmp_files``: 目錄中 .tmp 檔案的名稱清單。
+        """
+        info = self._models.get(model_id)
+        if info is None:
+            return False, [], []
+
+        # 取得模型目錄（zip 解壓後的目錄，或直接是檔案所在目錄）
+        if info.filename.endswith(".zip"):
+            model_dir = self._download_dir / info.filename[:-4]
+        else:
+            model_dir = self._download_dir / info.filename
+            if model_dir.is_file():
+                model_dir = model_dir.parent
+
+        if not model_dir.is_dir():
+            return False, list(required_files or []), []
+
+        existing = {p.name for p in model_dir.iterdir()}
+
+        # 偵測 .tmp 檔案（未完成的下載）
+        tmp_files = [name for name in existing if name.endswith(".tmp")]
+
+        # 驗證必要檔案
+        missing_files: list[str] = []
+        if required_files:
+            for entry in required_files:
+                if " OR " in entry:
+                    alternatives = [a.strip() for a in entry.split(" OR ")]
+                    if not any(alt in existing for alt in alternatives):
+                        missing_files.append(entry)
+                else:
+                    if entry not in existing:
+                        missing_files.append(entry)
+
+        is_valid = len(missing_files) == 0 and len(tmp_files) == 0
+        return is_valid, missing_files, tmp_files
+
     def delete_model(self, model_id: str) -> bool:
         """刪除已下載的模型檔案。
 

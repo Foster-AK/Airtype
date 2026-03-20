@@ -267,6 +267,13 @@ class QwenOnnxEngine:
 
     ENGINE_ID = "qwen3-onnx"
     SUPPORTED_LANGUAGES = list(_LANG_TO_BCP47.values())
+    REQUIRED_FILES = [
+        "encoder.onnx OR encoder.int8.onnx",
+        "decoder_init.onnx OR decoder_init.int8.onnx",
+        "decoder_step.onnx OR decoder_step.int8.onnx",
+        "embed_tokens.bin",
+        "config.json",
+    ]
 
     def __init__(self) -> None:
         self._model_path: Optional[str] = None

@@ -160,7 +160,35 @@ for rule in dictionary.get_replace_rules():
 
 ---
 
-## 五、關鍵發現摘要
+## 五、vLLM 後端評估：不納入本專案
+
+### 結論：❌ 不適合本專案，不需要整合
+
+### 理由
+
+1. **硬體門檻過高**：vLLM 僅支援 NVIDIA GPU + CUDA，且 VRAM 需求大（通常需 8GB+）。不支援 AMD、Intel GPU 及純 CPU 環境，無法涵蓋大部分桌面使用者的配備。
+
+2. **本專案已有完整的硬體適配鏈**：`hardware-detection` spec 定義的決策樹已覆蓋所有情境——NVIDIA GPU → PyTorch CUDA、AMD/Intel GPU → Vulkan（chatllm.cpp）、CPU → OpenVINO INT8、低階 CPU → sherpa-onnx SenseVoice。不需要再加一個高門檻的後端。
+
+3. **vLLM 的串流是「偽串流」**：每次推理都重送全量音訊（`audio_accum`），延遲隨音訊長度線性增加。相比之下 sherpa-onnx 提供真正的增量串流辨識，更適合桌面端即時輸入場景。
+
+4. **Context 機制不需要 vLLM**：`context` 參數的注入在所有 Qwen3 引擎（PyTorch CUDA、Vulkan、ONNX）中均可實作，因為它只是 prompt 的一部分，與推理後端無關。
+
+5. **vLLM 是伺服器端工具**：vLLM 設計用於高併發、大規模部署的伺服器端推理（多用戶、批次排程、PagedAttention），對桌面端單用戶場景是過度設計。其安裝與相依套件也偏向伺服器環境（需要特定版本的 CUDA toolkit、PyTorch 等）。
+
+### 現有替代方案已足夠
+
+| 需求 | 現有方案 | 狀態 |
+|---|---|---|
+| GPU 推理 | PyTorch CUDA / Vulkan (chatllm.cpp) | ✅ 已實作 |
+| CPU 推理 | ONNX Runtime / OpenVINO | ✅ 已實作 |
+| 真實串流辨識 | sherpa-onnx (SenseVoice / Paraformer) | ✅ 已實作 |
+| 詞典 / 熱詞 | context 注入 + 後處理取代 | ✅ 已設計 |
+| 硬體自動偵測 | HardwareDetector + 推薦決策樹 | ✅ 已實作 |
+
+---
+
+## 六、關鍵發現摘要
 
 | 功能 | 支援狀態 | 備註 |
 |---|---|---|
